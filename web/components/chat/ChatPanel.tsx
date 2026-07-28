@@ -14,8 +14,17 @@ type ChatMessage = {
 
 const HELP_TEXT = "comandos: refrescar grafo · buscar <texto> · leer <path> · ejecutar <objetivo>";
 const RESULT_TIMEOUT_MS = 20_000;
+const SESSION_STORAGE_KEY = "repo-os-chat-session-id";
 
-const timeLabel = () => new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+const formatTime = (iso: string) => new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+const getOrCreateSessionId = (): string => {
+  const existing = window.localStorage.getItem(SESSION_STORAGE_KEY);
+  if (existing) return existing;
+  const id = crypto.randomUUID();
+  window.localStorage.setItem(SESSION_STORAGE_KEY, id);
+  return id;
+};
 
 const Avatar = ({ blocked }: { blocked?: boolean }) => (
   <div
@@ -73,7 +82,7 @@ const Bubble = ({ message, showAvatar }: { message: ChatMessage; showAvatar: boo
           )}
           <pre className="whitespace-pre-wrap break-words font-mono">{message.text}</pre>
         </div>
-        <span className="mt-0.5 px-1 text-[9px] text-hud-textDim">{message.at}</span>
+        <span className="mt-0.5 px-1 text-[9px] text-hud-textDim">{formatTime(message.at)}</span>
       </div>
     </motion.div>
   );
@@ -94,6 +103,7 @@ export const ChatPanel = () => {
   const [input, setInput] = useState("");
   const [busOnline, setBusOnline] = useState<boolean | null>(null);
   const [pendingCount, setPendingCount] = useState(0);
+  const [historyLoaded, setHistoryLoaded] = useState(false);
   // The bus can resolve an intent (no I/O, e.g. run_scenario) faster than this
   // tab's own POST /api/chat/intent round-trip finishes, so the SSE "result"
   // can arrive before we know our own intent id. earlyResults buffers those;
@@ -104,11 +114,15 @@ export const ChatPanel = () => {
   const pendingResolvers = useRef(new Map<string, (payload: ResultPayload) => void>());
   const pendingCountRef = useRef(0);
   const timeouts = useRef(new Map<string, ReturnType<typeof setTimeout>>());
+  const sessionId = useRef<string>("");
   const logRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const pushMessage = (msg: Omit<ChatMessage, "id" | "at">) => {
-    setMessages((prev) => [...prev, { ...msg, id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, at: timeLabel() }]);
+  const pushMessage = (msg: Omit<ChatMessage, "id" | "at"> & { at?: string }) => {
+    setMessages((prev) => [
+      ...prev,
+      { ...msg, id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, at: msg.at ?? new Date().toISOString() }
+    ]);
   };
 
   const adjustPending = (delta: number) => {
@@ -123,6 +137,20 @@ export const ChatPanel = () => {
       timeouts.current.delete(id);
     }
   };
+
+  useEffect(() => {
+    sessionId.current = getOrCreateSessionId();
+    fetch(`/api/chat/history?sessionId=${encodeURIComponent(sessionId.current)}`)
+      .then((res) => res.json())
+      .then((data: { entries?: { role: ChatMessage["role"]; text: string; at: string }[] }) => {
+        const entries = data.entries ?? [];
+        if (entries.length > 0) {
+          setMessages(entries.map((entry, i) => ({ ...entry, id: `history-${i}-${entry.at}` })));
+        }
+      })
+      .catch(() => {})
+      .finally(() => setHistoryLoaded(true));
+  }, []);
 
   useEffect(() => {
     const es = new EventSource("/api/chat/stream");
@@ -170,7 +198,7 @@ export const ChatPanel = () => {
       const res = await fetch("/api/chat/intent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text })
+        body: JSON.stringify({ text, sessionId: sessionId.current })
       });
       const data = (await res.json()) as { blocked: boolean; reason?: string; id?: string };
 
@@ -243,7 +271,8 @@ export const ChatPanel = () => {
       </div>
 
       <div ref={logRef} className="flex-1 space-y-2.5 overflow-y-auto px-2.5 py-3">
-        {messages.length === 0 && (
+        {!historyLoaded && <p className="text-center text-[9px] uppercase tracking-widest text-hud-textDim">cargando sesión...</p>}
+        {historyLoaded && messages.length === 0 && (
           <div className="flex items-end gap-1.5">
             <Avatar />
             <div className="max-w-[78%] rounded-2xl rounded-bl-sm border border-hud-border bg-hud-panelAlt px-3 py-2 text-[11px] leading-relaxed text-hud-textDim">

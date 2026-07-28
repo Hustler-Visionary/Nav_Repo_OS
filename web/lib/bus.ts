@@ -23,8 +23,12 @@ export const SUBJECTS = {
   result: (intentId: string) => `repo.result.${intentId}`,
   resultWildcard: "repo.result.>",
   audit: "repo.audit.blocked",
-  auditWildcard: "repo.audit.>"
+  auditWildcard: "repo.audit.>",
+  /** Per-session chat transcript, persisted in the stream so a reload can replay it. */
+  chat: (sessionId: string) => `repo.chat.${sessionId}`
 };
+
+export type ChatLogEntry = { role: "user" | "system" | "blocked"; text: string; at: string };
 
 export const sc = StringCodec();
 
@@ -70,7 +74,7 @@ const ensureStream = async (nc: NatsConnection) => {
   } catch {
     await jsm.streams.add({
       name: STREAM_NAME,
-      subjects: ["repo.intent.>", "repo.result.>", "repo.audit.>"],
+      subjects: ["repo.intent.>", "repo.result.>", "repo.audit.>", "repo.chat.>"],
       storage: StorageType.File,
       max_age: 24 * 60 * 60 * 1_000_000_000
     });
@@ -108,6 +112,37 @@ export const durableConsumerOpts = (durableName: string) =>
     .ackExplicit()
     .deliverTo(`${durableName}.deliver`)
     .deliverAll();
+
+/** Appends one entry to a session's durable chat transcript. Fire-and-forget: history is best-effort, never blocks the live path. */
+export const logChatEntry = (nc: NatsConnection, sessionId: string, entry: ChatLogEntry) => {
+  nc.publish(SUBJECTS.chat(sessionId), sc.encode(JSON.stringify(entry)));
+};
+
+const HISTORY_SCAN_LIMIT = 5000;
+
+/** Replays a session's chat transcript from the stream (best-effort, scoped to the stream's retention window). */
+export const fetchChatHistory = async (sessionId: string): Promise<ChatLogEntry[]> => {
+  const nc = await getBus();
+  if (!nc) return [];
+
+  const jsm = await nc.jetstreamManager();
+  const info = await jsm.streams.info(STREAM_NAME);
+  const lastSeq = info.state.last_seq;
+  const firstSeq = Math.max(info.state.first_seq, lastSeq - HISTORY_SCAN_LIMIT + 1);
+  const subject = SUBJECTS.chat(sessionId);
+
+  const entries: ChatLogEntry[] = [];
+  for (let seq = firstSeq; seq <= lastSeq; seq++) {
+    try {
+      const msg = await jsm.streams.getMessage(STREAM_NAME, { seq });
+      if (msg.subject !== subject) continue;
+      entries.push(JSON.parse(sc.decode(msg.data)) as ChatLogEntry);
+    } catch {
+      // sequence purged/expired between info() and getMessage(); skip it
+    }
+  }
+  return entries;
+};
 
 export type { JsMsg };
 export { AckPolicy, DeliverPolicy };
