@@ -8,6 +8,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "../ui/card";
 import { Badge } from "../ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "../ui/tabs";
 import { loader } from "@monaco-editor/react";
+import { languageForPath } from "../../lib/language";
 import type { GraphNode } from "../../lib/types";
 
 if (typeof window !== "undefined") {
@@ -96,7 +97,7 @@ export const NodeDetailPanel = ({ node, onClose }: { node: GraphNode; onClose: (
                   <MonacoEditor
                     height="100%"
                     theme="vs-dark"
-                    language="typescript"
+                    language={languageForPath(node.path)}
                     value={source}
                     options={{ readOnly: true, fontSize: 11, minimap: { enabled: false }, scrollBeyondLastLine: false }}
                   />

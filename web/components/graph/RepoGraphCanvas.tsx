@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useCallback } from "react";
+import dynamic from "next/dynamic";
 import {
   ReactFlow,
   Background,
@@ -10,11 +11,21 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { RepoNodeChip, type RepoFlowNode } from "./RepoNodeChip";
-import { NodeDetailPanel } from "./NodeDetailPanel";
 import { layoutMemoryGraph } from "../../lib/layout";
 import type { GraphNode, RepoGraph } from "../../lib/types";
 
 const nodeTypes = { repoNode: RepoNodeChip };
+
+// Code-split the whole detail panel (Monaco, its worker/loader setup, framer-motion)
+// into its own chunk that only downloads once a node is actually opened.
+const NodeDetailPanel = dynamic(() => import("./NodeDetailPanel").then((m) => m.NodeDetailPanel), {
+  ssr: false,
+  loading: () => (
+    <div className="absolute right-3 top-3 z-20 w-[420px] rounded-sm border border-hud-border bg-hud-panel/90 px-3 py-2 text-[10px] uppercase tracking-widest text-hud-textDim">
+      Loading panel...
+    </div>
+  )
+});
 
 export const RepoGraphCanvas = ({ graph, error }: { graph: RepoGraph | null; error: string | null }) => {
   const [search, setSearch] = useState("");
