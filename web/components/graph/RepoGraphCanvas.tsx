@@ -19,6 +19,7 @@ const nodeTypes = { repoNode: RepoNodeChip };
 export const RepoGraphCanvas = ({ graph, error }: { graph: RepoGraph | null; error: string | null }) => {
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [openNodeId, setOpenNodeId] = useState<string | null>(null);
 
   const positioned = useMemo(() => (graph ? layoutMemoryGraph(graph.nodes, graph.edges) : []), [graph]);
 
@@ -51,7 +52,13 @@ export const RepoGraphCanvas = ({ graph, error }: { graph: RepoGraph | null; err
       }
     })) ?? [];
 
-  const selectedNode = graph?.nodes.find((n) => n.id === selectedId) ?? null;
+  const openNode = graph?.nodes.find((n) => n.id === openNodeId) ?? null;
+
+  /** Double-click opens the detail panel, but only for nodes backed by a real file on disk. */
+  const handleNodeDoubleClick = (node: GraphNode | undefined) => {
+    if (!node || !node.path) return;
+    setOpenNodeId(node.id);
+  };
 
   return (
     <div className="relative h-full w-full">
@@ -82,7 +89,11 @@ export const RepoGraphCanvas = ({ graph, error }: { graph: RepoGraph | null; err
           edges={edges}
           nodeTypes={nodeTypes}
           onNodeClick={(_, node) => setSelectedId(node.id)}
-          onPaneClick={() => setSelectedId(null)}
+          onNodeDoubleClick={(_, node) => handleNodeDoubleClick((node.data as { node: GraphNode }).node)}
+          onPaneClick={() => {
+            setSelectedId(null);
+            setOpenNodeId(null);
+          }}
           fitView
           minZoom={0.1}
           proOptions={{ hideAttribution: true }}
@@ -92,7 +103,7 @@ export const RepoGraphCanvas = ({ graph, error }: { graph: RepoGraph | null; err
         </ReactFlow>
       )}
 
-      {selectedNode && <NodeDetailPanel node={selectedNode} onClose={() => setSelectedId(null)} />}
+      {openNode && <NodeDetailPanel node={openNode} onClose={() => setOpenNodeId(null)} />}
     </div>
   );
 };
