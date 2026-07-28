@@ -16,20 +16,22 @@ export type RepoFlowNode = Node<RepoNodeChipData, "repoNode">;
 export const RepoNodeChip = ({ data }: NodeProps<RepoFlowNode>) => {
   const { node, selected } = data;
   return (
-    <div className="flex w-[164px] flex-col items-start gap-0.5">
+    <div className="relative flex h-9 w-9 items-center justify-center">
       <Handle type="target" position={Position.Left} className="!bg-hud-border !border-0 !h-1 !w-1" />
       <Handle type="source" position={Position.Right} className="!bg-hud-border !border-0 !h-1 !w-1" />
       <div
         className={cn(
-          "flex items-center gap-2 rounded-full border bg-hud-bg/80 px-2 py-1 text-[11px] transition-transform",
+          "flex h-full w-full items-center justify-center rounded-full border-2 bg-hud-bg/90 transition-transform",
           riskColor[node.risk],
-          selected && "scale-105 ring-1 ring-hud-cyan"
+          selected && "scale-110 ring-2 ring-hud-cyan"
         )}
       >
-        <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-current" />
-        <span className="truncate font-medium">{node.name}</span>
+        <span className="h-2 w-2 rounded-full bg-current" />
       </div>
-      <span className="pl-1 text-[9px] uppercase tracking-wider text-hud-textDim">{node.layer}</span>
+      <div className="pointer-events-none absolute top-full mt-1 flex flex-col items-center whitespace-nowrap">
+        <span className="text-[10px] font-medium text-hud-text">{node.name}</span>
+        <span className="text-[8px] uppercase tracking-wider text-hud-textDim">{node.layer}</span>
+      </div>
     </div>
   );
 };
