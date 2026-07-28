@@ -833,5 +833,22 @@ Se agrega Unified Runtime Kernel y External Integration con estrategia disabled-
 - No hay escritura ni mutación de repo desde la UI: solo lectura (`readonly-real`).
 
 ### Qué falta
-- Chat/intent panel, minimapa y tabs NODES/TERMINAL/METRICS del mockup original quedan fuera de esta primera versión.
+- Minimapa y tabs NODES/TERMINAL/METRICS del mockup original quedan fuera de esta primera versión.
 - Sin autenticación ni despliegue; pensado para correr localmente (`npm install && npm run dev` dentro de `web/`).
+
+## Fase 27.2: Memory Graph Layout + Chat Separado sobre Bus Real (NATS JetStream)
+
+### Qué existe realmente
+- El layout del grafo pasó de grilla fija a un layout orgánico tipo "grafo de memoria" (`web/lib/layout.ts`, `d3-force`: repulsión, atracción por edges reales y agrupamiento suave por capa) — mismos 85 nodos reales, ahora dispuestos como un knowledge graph navegable.
+- Se agrega un panel de chat separado (`web/components/chat/ChatPanel.tsx`) a la derecha, desacoplado del resto de la UI: nunca llama funciones de dominio directamente.
+- **Semantic firewall real** (`web/lib/semantic-firewall.ts`): gramática de allowlist anclada (regex `^...$`) que traduce texto libre a uno de 4 intents fijos (`refrescar grafo`, `buscar <texto>`, `leer <path>`, `ejecutar <objetivo>`) o lo rechaza. No hay LLM interpretando instrucciones en este camino — cualquier texto que no matchee exactamente una de las gramáticas permitidas se bloquea, incluidos intentos de prompt injection, sin ejecutar nada.
+- **Bus de mensajería real** (`web/lib/bus.ts`, `web/instrumentation.ts`): al arrancar Next.js se descarga y levanta un `nats-server` real con JetStream (`web/scripts/setup-nats.mjs`, binario oficial v2.10.22), se crea el stream `REPO_OS_BUS` y un worker en background (proceso separado del request HTTP) consume `repo.intent.submit` como consumer durable.
+- Los intents aprobados por el firewall se publican en JetStream; el worker los ejecuta invocando **funciones reales** de `src/domain` (`buildDomainGraph`, y `runVerticalSliceDeterministic` + `renderProductShell` de `product-consolidation` para `ejecutar <objetivo>`) y publica el resultado; el chat lo recibe por SSE (`/api/chat/stream`) y lo renderiza. Los bloqueos del firewall también se auditan por el bus (`repo.audit.blocked`) y se transmiten en vivo a todos los clientes conectados.
+
+### Qué es mock/simulado
+- El layout de memoria es puramente visual (fuerzas de d3-force), no representa proximidad semántica real más allá del agrupamiento por capa.
+- `ejecutar <objetivo>` corre `runVerticalSliceDeterministic`, que ya era determinista/mock en su propio dominio (approval y apply son mock, como documenta la Fase 25).
+
+### Qué falta
+- El bus solo corre localmente (un `nats-server` por instancia de dev/build), sin clustering ni persistencia fuera de `web/.nats-data`.
+- El firewall es un allowlist fijo de 4 verbos; ampliarlo requiere agregar reglas explícitas, nunca interpretación abierta de texto.

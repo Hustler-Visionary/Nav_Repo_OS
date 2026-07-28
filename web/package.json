@@ -7,16 +7,20 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "postinstall": "node scripts/copy-monaco.mjs"
+    "postinstall": "node scripts/copy-monaco.mjs && node scripts/setup-nats.mjs"
   },
   "dependencies": {
     "@monaco-editor/react": "^4.6.0",
+    "@types/d3-force": "^3.0.10",
     "@xyflow/react": "^12.3.5",
+    "adm-zip": "^0.6.0",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
+    "d3-force": "^3.0.0",
     "framer-motion": "^11.11.17",
     "lucide-react": "^0.454.0",
     "monaco-editor": "^0.52.2",
+    "nats": "^2.29.3",
     "next": "^14.2.15",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

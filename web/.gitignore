@@ -1,3 +1,5 @@
 node_modules/
 .next/
 public/monaco/
+.nats-bin/
+.nats-data/

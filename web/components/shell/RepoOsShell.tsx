@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Settings, Power, Folder, Database, History as HistoryIcon, Share2 } from "lucide-react";
 import { RepoGraphCanvas } from "../graph/RepoGraphCanvas";
+import { ChatPanel } from "../chat/ChatPanel";
 import type { RepoGraph } from "../../lib/types";
 
 const navItems = [
@@ -94,30 +95,36 @@ export const RepoOsShell = () => {
           <RepoGraphCanvas graph={graph} error={error} />
         </main>
 
-        <aside className="flex w-56 shrink-0 flex-col gap-3 border-l border-hud-border px-3 py-3">
-          <div className="rounded-sm border border-hud-border bg-hud-panel p-2">
-            <div className="text-[10px] uppercase tracking-widest text-hud-textDim">System Status</div>
-            <div className="mt-1 flex items-baseline justify-between">
-              <span className="text-[10px] text-hud-textDim">Connectivity</span>
-              <span className="text-lg font-semibold text-hud-green">{stats ? `${stats.connectivity}%` : "--"}</span>
+        <aside className="flex w-80 shrink-0 flex-col gap-3 border-l border-hud-border px-3 py-3">
+          <div className="flex shrink-0 gap-3">
+            <div className="flex-1 rounded-sm border border-hud-border bg-hud-panel p-2">
+              <div className="text-[10px] uppercase tracking-widest text-hud-textDim">System Status</div>
+              <div className="mt-1 flex items-baseline justify-between">
+                <span className="text-[10px] text-hud-textDim">Connectivity</span>
+                <span className="text-lg font-semibold text-hud-green">{stats ? `${stats.connectivity}%` : "--"}</span>
+              </div>
+              <div className="mt-1 flex justify-between text-[10px] text-hud-textDim">
+                <span>Nodes</span>
+                <span className="text-hud-text">{stats?.nodes ?? "--"}</span>
+              </div>
+              <div className="flex justify-between text-[10px] text-hud-textDim">
+                <span>Edges</span>
+                <span className="text-hud-text">{stats?.edges ?? "--"}</span>
+              </div>
             </div>
-            <div className="mt-1 flex justify-between text-[10px] text-hud-textDim">
-              <span>Nodes</span>
-              <span className="text-hud-text">{stats?.nodes ?? "--"}</span>
-            </div>
-            <div className="flex justify-between text-[10px] text-hud-textDim">
-              <span>Edges</span>
-              <span className="text-hud-text">{stats?.edges ?? "--"}</span>
+
+            <div className="flex-1 rounded-sm border border-hud-border bg-hud-panel p-2">
+              <div className="flex items-center justify-between text-[10px] uppercase tracking-widest text-hud-textDim">
+                <span>Data Stream</span>
+                <span className="h-1.5 w-1.5 rounded-full bg-hud-green" />
+              </div>
+              <div className="mt-1 text-[10px] text-hud-textDim">Layers: <span className="text-hud-text">{stats?.layers ?? "--"}</span></div>
+              <div className="text-[10px] text-hud-textDim">Mode: <span className="text-hud-cyan">read-only-real</span></div>
             </div>
           </div>
 
-          <div className="rounded-sm border border-hud-border bg-hud-panel p-2">
-            <div className="flex items-center justify-between text-[10px] uppercase tracking-widest text-hud-textDim">
-              <span>Data Stream</span>
-              <span className="h-1.5 w-1.5 rounded-full bg-hud-green" />
-            </div>
-            <div className="mt-1 text-[10px] text-hud-textDim">Layers: <span className="text-hud-text">{stats?.layers ?? "--"}</span></div>
-            <div className="text-[10px] text-hud-textDim">Mode: <span className="text-hud-cyan">read-only-real</span></div>
+          <div className="min-h-0 flex-1">
+            <ChatPanel />
           </div>
         </aside>
       </div>

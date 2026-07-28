@@ -11,7 +11,7 @@ import {
 import "@xyflow/react/dist/style.css";
 import { RepoNodeChip, type RepoFlowNode } from "./RepoNodeChip";
 import { NodeDetailPanel } from "./NodeDetailPanel";
-import { layoutByLayer } from "../../lib/layout";
+import { layoutMemoryGraph } from "../../lib/layout";
 import type { GraphNode, RepoGraph } from "../../lib/types";
 
 const nodeTypes = { repoNode: RepoNodeChip };
@@ -20,7 +20,7 @@ export const RepoGraphCanvas = ({ graph, error }: { graph: RepoGraph | null; err
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const positioned = useMemo(() => (graph ? layoutByLayer(graph.nodes) : []), [graph]);
+  const positioned = useMemo(() => (graph ? layoutMemoryGraph(graph.nodes, graph.edges) : []), [graph]);
 
   const matches = useCallback(
     (node: GraphNode) => {
