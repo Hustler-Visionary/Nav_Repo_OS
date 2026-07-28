@@ -819,3 +819,19 @@ Se incorpora `src/domain/mcp-fabric/` con modelo de registro, permisos, scope, s
 
 ## Fase 26.7 + 27
 Se agrega Unified Runtime Kernel y External Integration con estrategia disabled-by-default, sandbox-first y governance-first para activación real progresiva sin mutaciones externas por defecto.
+
+## Fase 27.1: REPO_OS Web Interface
+
+### Qué existe realmente
+- Primera interfaz web real del proyecto en `web/` (Next.js 14 App Router + React + TailwindCSS + `@xyflow/react` + Monaco + Framer Motion), estilo operacional oscuro ("REPO_OS").
+- El grafo central se construye leyendo en vivo los archivos reales de `src/domain/**` (no mock): `web/lib/graph.ts` reutiliza `RealRepoReadOnlyProvider` para lectura segura de archivos y deriva nodos/edges a partir de imports relativos reales.
+- Click en un nodo abre panel de detalle con tabs Code (Monaco, contenido real del archivo vía `/api/file`), Runtime (estado/riesgo/costo) y GNN (métricas heurísticas de acoplamiento — explícitamente etiquetadas como análisis estático, no un modelo entrenado).
+- Monaco se sirve self-hosted desde `web/public/monaco` (generado por `npm run postinstall`) para no depender de CDN externo.
+
+### Qué es mock/simulado
+- Las métricas "GNN" (blast radius, risk, confidence) son heurísticas deterministas sobre acoplamiento de imports y tamaño de archivo, no inferencia de un modelo real.
+- No hay escritura ni mutación de repo desde la UI: solo lectura (`readonly-real`).
+
+### Qué falta
+- Chat/intent panel, minimapa y tabs NODES/TERMINAL/METRICS del mockup original quedan fuera de esta primera versión.
+- Sin autenticación ni despliegue; pensado para correr localmente (`npm install && npm run dev` dentro de `web/`).

@@ -1,0 +1,28 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body {
+  background-color: #05070a;
+  color: #cdeef7;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #1b2a38 #05070a;
+}
+
+.hud-scanlines {
+  background-image: repeating-linear-gradient(
+    to bottom,
+    rgba(34, 211, 238, 0.02),
+    rgba(34, 211, 238, 0.02) 1px,
+    transparent 1px,
+    transparent 2px
+  );
+}
+
+.react-flow__attribution {
+  display: none;
+}
