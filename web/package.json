@@ -18,12 +18,17 @@
     "clsx": "^2.1.1",
     "d3-force": "^3.0.0",
     "framer-motion": "^11.11.17",
+    "highlight.js": "^11.11.1",
     "lucide-react": "^0.454.0",
     "monaco-editor": "^0.52.2",
     "nats": "^2.29.3",
     "next": "^14.2.15",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "react-markdown": "^10.1.0",
+    "rehype-highlight": "^7.0.2",
+    "remark-breaks": "^4.0.0",
+    "remark-gfm": "^4.0.1",
     "tailwind-merge": "^2.5.4"
   },
   "devDependencies": {
