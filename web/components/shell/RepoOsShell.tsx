@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { Settings, Power, Folder, LayoutPanelTop, History as HistoryIcon, Share2 } from "lucide-react";
 import { RepoGraphCanvas } from "../graph/RepoGraphCanvas";
 import { ChatPanel } from "../chat/ChatPanel";
+import { AssembledInterface } from "../ui-preview/AssembledInterface";
+import { cn } from "../../lib/utils";
 import type { RepoGraph } from "../../lib/types";
 
 const navItems = [
@@ -25,6 +27,10 @@ export const RepoOsShell = () => {
     ui: emptyView
   });
   const [activeNav, setActiveNav] = useState("root");
+  // Within the "ui" nav: "interface" assembles the real preview panels into
+  // one product mockup (the default -- this is what "UI" is for); "graph"
+  // is the unchanged per-file dependency graph + click-to-preview panel.
+  const [uiMode, setUiMode] = useState<"interface" | "graph">("interface");
 
   const fetchView = (key: "root" | "ui", scope?: "ui") => {
     fetch(scope ? `/api/graph?scope=${scope}` : "/api/graph")
@@ -118,7 +124,26 @@ export const RepoOsShell = () => {
         </aside>
 
         <main className="relative flex-1">
-          {isGraphView ? (
+          {activeNav === "ui" && (
+            <div className="absolute left-3 top-3 z-30 flex overflow-hidden rounded-sm border border-hud-border bg-hud-panel/90 text-[10px] uppercase tracking-wide">
+              <button
+                onClick={() => setUiMode("interface")}
+                className={cn("px-2.5 py-1.5", uiMode === "interface" ? "bg-hud-cyan/10 text-hud-cyan" : "text-hud-textDim hover:text-hud-text")}
+              >
+                Full Interface
+              </button>
+              <button
+                onClick={() => setUiMode("graph")}
+                className={cn("border-l border-hud-border px-2.5 py-1.5", uiMode === "graph" ? "bg-hud-cyan/10 text-hud-cyan" : "text-hud-textDim hover:text-hud-text")}
+              >
+                Graph
+              </button>
+            </div>
+          )}
+
+          {activeNav === "ui" && uiMode === "interface" ? (
+            <AssembledInterface />
+          ) : isGraphView ? (
             <RepoGraphCanvas key={activeNav} graph={graph} error={error} />
           ) : (
             <div className="flex h-full items-center justify-center text-xs uppercase tracking-widest text-hud-textDim">

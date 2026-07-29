@@ -126,6 +126,25 @@ appState = storeActions.publishTrace(appState, {
 
 export type UiPreviewSample = { kind: string; data: unknown };
 
+/** Every src/components/* path this app can build a real preview sample for. */
+export const UI_PREVIEW_PATHS = [
+  "src/components/hud/OperationalHUD.ts",
+  "src/components/canvas/RepoCanvas.tsx",
+  "src/components/editor/NodeEditor.tsx",
+  "src/components/node/GovernanceOverlay.ts",
+  "src/components/strategic/ExecutiveCommandCenter.ts",
+  "src/components/strategic/StrategicOperationsCenter.ts",
+  "src/components/executive/ExecutiveOperationsPanel.ts",
+  "src/components/investor/InvestorDemoMode.ts",
+  "src/components/inspector/DiffPreviewPanel.ts",
+  "src/components/loop-prevention/LoopDiagnosticPanel.ts",
+  "src/components/evolution/EvolutionSurface.ts",
+  "src/components/reasoning/ReasoningInspectorPanel.ts",
+  "src/components/replay/ReplayTheater.ts",
+  "src/components/product/ProductShell.tsx",
+  "src/components/demo/ExecutiveDemoMode.ts"
+] as const;
+
 /** Maps a src/components/* file path to real sample data built from actual src/domain factories -- not hand-authored fixtures where a real one exists. */
 export const buildUiPreviewSample = (relPath: string): UiPreviewSample | null => {
   switch (relPath) {
