@@ -72,8 +72,8 @@ const resolveSpecifier = (fromFileAbs: string, specifier: string): string | null
   return resolved;
 };
 
-export const buildDomainGraph = async (): Promise<RepoGraph> => {
-  const files = await listTsFiles(DOMAIN_ROOT);
+const buildGraphForRoot = async (scanRootAbs: string): Promise<RepoGraph> => {
+  const files = await listTsFiles(scanRootAbs);
   const relPaths = new Set(files.map(toRelPath));
 
   const rawNodes: (Omit<GraphNode, "risk" | "confidence" | "cost" | "blastRadius"> & { content: string })[] = [];
@@ -128,8 +128,11 @@ export const buildDomainGraph = async (): Promise<RepoGraph> => {
     return { ...node, inDegree: d.in, outDegree: d.out, risk, confidence, cost, blastRadius };
   });
 
-  return { nodes, edges, scannedRoot: toRelPath(DOMAIN_ROOT) };
+  return { nodes, edges, scannedRoot: toRelPath(scanRootAbs) };
 };
+
+export const buildDomainGraph = (): Promise<RepoGraph> => buildGraphForRoot(DOMAIN_ROOT);
+export const buildComponentsGraph = (): Promise<RepoGraph> => buildGraphForRoot(path.join(REPO_ROOT, "src", "components"));
 
 export const readNodeSource = async (relPath: string): Promise<string> => {
   const abs = path.join(REPO_ROOT, relPath);

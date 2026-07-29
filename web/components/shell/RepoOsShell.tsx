@@ -1,31 +1,57 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Settings, Power, Folder, Database, History as HistoryIcon, Share2 } from "lucide-react";
+import { Settings, Power, Folder, LayoutPanelTop, History as HistoryIcon, Share2 } from "lucide-react";
 import { RepoGraphCanvas } from "../graph/RepoGraphCanvas";
 import { ChatPanel } from "../chat/ChatPanel";
 import type { RepoGraph } from "../../lib/types";
 
 const navItems = [
   { key: "root", label: "Explore Repository", icon: Folder },
-  { key: "metadata", label: "METADATA", icon: Database },
+  { key: "ui", label: "UI", icon: LayoutPanelTop },
   { key: "history", label: "HISTORY", icon: HistoryIcon },
   { key: "network", label: "NETWORK", icon: Share2 }
 ];
 
 const topTabs = ["CLUSTER", "NODES", "TERMINAL", "METRICS"];
 
+type GraphView = { graph: RepoGraph | null; error: string | null; loaded: boolean };
+
+const emptyView: GraphView = { graph: null, error: null, loaded: false };
+
 export const RepoOsShell = () => {
-  const [graph, setGraph] = useState<RepoGraph | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [views, setViews] = useState<Record<"root" | "ui", GraphView>>({
+    root: emptyView,
+    ui: emptyView
+  });
   const [activeNav, setActiveNav] = useState("root");
 
-  useEffect(() => {
-    fetch("/api/graph")
+  const fetchView = (key: "root" | "ui", scope?: "ui") => {
+    fetch(scope ? `/api/graph?scope=${scope}` : "/api/graph")
       .then((res) => res.json())
-      .then((data: RepoGraph | { error: string }) => ("error" in data ? setError(data.error) : setGraph(data)))
-      .catch((err) => setError(String(err)));
+      .then((data: RepoGraph | { error: string }) =>
+        setViews((prev) => ({
+          ...prev,
+          [key]: "error" in data ? { graph: null, error: data.error, loaded: true } : { graph: data, error: null, loaded: true }
+        }))
+      )
+      .catch((err) => setViews((prev) => ({ ...prev, [key]: { graph: null, error: String(err), loaded: true } })));
+  };
+
+  // Root graph (src/domain) loads immediately, like before. The UI graph
+  // (src/components) is fetched lazily the first time that tab is opened,
+  // then cached so switching back and forth is instant.
+  useEffect(() => {
+    fetchView("root");
   }, []);
+
+  useEffect(() => {
+    if (activeNav === "ui" && !views.ui.loaded) fetchView("ui", "ui");
+  }, [activeNav, views.ui.loaded]);
+
+  const isGraphView = activeNav === "root" || activeNav === "ui";
+  const currentView = activeNav === "ui" ? views.ui : views.root;
+  const { graph, error } = currentView;
 
   const stats = useMemo(() => {
     if (!graph) return null;
@@ -85,14 +111,20 @@ export const RepoOsShell = () => {
                   <div><span className="text-hud-cyan">{new Date().toLocaleTimeString()}</span> source: {graph.scannedRoot}</div>
                 </>
               ) : (
-                <div>scanning src/domain...</div>
+                <div>scanning {activeNav === "ui" ? "src/components" : "src/domain"}...</div>
               )}
             </div>
           </div>
         </aside>
 
         <main className="relative flex-1">
-          <RepoGraphCanvas graph={graph} error={error} />
+          {isGraphView ? (
+            <RepoGraphCanvas key={activeNav} graph={graph} error={error} />
+          ) : (
+            <div className="flex h-full items-center justify-center text-xs uppercase tracking-widest text-hud-textDim">
+              {activeNav.toUpperCase()} view not implemented yet
+            </div>
+          )}
         </main>
 
         <aside className="flex w-80 shrink-0 flex-col gap-3 border-l border-hud-border px-3 py-3">

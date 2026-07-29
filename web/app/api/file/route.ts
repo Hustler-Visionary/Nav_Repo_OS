@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
   const relPath = request.nextUrl.searchParams.get("path");
-  if (!relPath || !relPath.startsWith("src/domain/")) {
+  if (!relPath || !(relPath.startsWith("src/domain/") || relPath.startsWith("src/components/"))) {
     return NextResponse.json({ error: "invalid path" }, { status: 400 });
   }
   try {
