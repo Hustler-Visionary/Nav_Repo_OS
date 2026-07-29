@@ -1,6 +1,7 @@
 import { readdir, readFile as fsReadFile } from "node:fs/promises";
 import path from "node:path";
 import { createRealRepoReadOnlyProvider } from "../../src/domain/repo/providers/RealRepoReadOnlyProvider.js";
+import { REPO_ROOT, SRC_SCAN_DIR, DOMAIN_SCAN_DIR, UI_SCAN_DIR } from "./repo-config";
 
 export type GraphNode = {
   id: string;
@@ -26,9 +27,8 @@ export type RepoGraph = {
   scannedRoot: string;
 };
 
-const REPO_ROOT = path.resolve(process.cwd(), "..");
-const DOMAIN_ROOT = path.join(REPO_ROOT, "src", "domain");
-const SRC_ROOT = path.join(REPO_ROOT, "src");
+const DOMAIN_ROOT = path.join(REPO_ROOT, DOMAIN_SCAN_DIR);
+const SRC_ROOT = path.join(REPO_ROOT, SRC_SCAN_DIR);
 
 const provider = createRealRepoReadOnlyProvider(SRC_ROOT);
 
@@ -132,7 +132,7 @@ const buildGraphForRoot = async (scanRootAbs: string): Promise<RepoGraph> => {
 };
 
 export const buildDomainGraph = (): Promise<RepoGraph> => buildGraphForRoot(DOMAIN_ROOT);
-export const buildComponentsGraph = (): Promise<RepoGraph> => buildGraphForRoot(path.join(REPO_ROOT, "src", "components"));
+export const buildComponentsGraph = (): Promise<RepoGraph> => buildGraphForRoot(path.join(REPO_ROOT, UI_SCAN_DIR));
 
 export const readNodeSource = async (relPath: string): Promise<string> => {
   const abs = path.join(REPO_ROOT, relPath);

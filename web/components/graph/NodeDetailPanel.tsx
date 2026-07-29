@@ -46,7 +46,8 @@ export const NodeDetailPanel = ({ node, onClose }: { node: GraphNode; onClose: (
   const [loadingSource, setLoadingSource] = useState(false);
   const [preview, setPreview] = useState<PreviewSample | null>(null);
   const [previewError, setPreviewError] = useState<string | null>(null);
-  const isUiNode = node.path.startsWith("src/components/");
+  const uiScanDir = process.env.NEXT_PUBLIC_UI_SCAN_DIR || "src/components";
+  const isUiNode = node.path.startsWith(`${uiScanDir}/`);
 
   useEffect(() => {
     setSource(null);
