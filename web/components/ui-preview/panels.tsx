@@ -7,7 +7,7 @@ const toneClass = { low: "text-hud-cyan", medium: "text-hud-amber", high: "text-
 const toneBorder = { low: "border-hud-cyanDim/40", medium: "border-hud-amber/40", high: "border-hud-red/40" } as const;
 
 const Panel = ({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) => (
-  <div className="rounded-md border border-hud-border bg-hud-panel p-3 text-hud-text">
+  <div className="glass-panel rounded-xl p-3 text-hud-text">
     <div className="mb-2 flex items-baseline justify-between">
       <span className="text-[11px] font-semibold uppercase tracking-widest text-hud-cyan">{title}</span>
       {subtitle && <span className="text-[9px] text-hud-textDim">{subtitle}</span>}
@@ -17,7 +17,7 @@ const Panel = ({ title, subtitle, children }: { title: string; subtitle?: string
 );
 
 const Stat = ({ label, value, tone }: { label: string; value: string | number; tone?: "low" | "medium" | "high" }) => (
-  <div className="flex items-center justify-between border-b border-hud-border/60 py-1 text-[11px] last:border-0">
+  <div className="flex items-center justify-between border-b border-white/8 py-1 text-[11px] last:border-0">
     <span className="text-hud-textDim">{label}</span>
     <span className={cn("font-medium", tone ? toneClass[tone] : "text-hud-text")}>{value}</span>
   </div>
@@ -29,14 +29,14 @@ const Meter = ({ label, value }: { label: string; value: number }) => (
       <span>{label}</span>
       <span className="text-hud-text">{Math.round(value * 100)}%</span>
     </div>
-    <div className="h-1.5 overflow-hidden rounded-full bg-hud-panelAlt">
-      <div className="h-full rounded-full bg-hud-cyan" style={{ width: `${Math.min(100, Math.max(0, value * 100))}%` }} />
+    <div className="h-1.5 overflow-hidden rounded-full bg-white/5">
+      <div className="h-full rounded-full bg-hud-cyan shadow-[0_0_6px_rgba(34,211,238,0.6)]" style={{ width: `${Math.min(100, Math.max(0, value * 100))}%` }} />
     </div>
   </div>
 );
 
 const Pill = ({ children, tone = "low" as const }: { children: React.ReactNode; tone?: "low" | "medium" | "high" }) => (
-  <span className={cn("inline-block rounded-sm border px-1.5 py-0.5 text-[9px] uppercase tracking-wide", toneBorder[tone], toneClass[tone])}>{children}</span>
+  <span className={cn("inline-block rounded-full border px-1.5 py-0.5 text-[9px] uppercase tracking-wide backdrop-blur-sm", toneBorder[tone], toneClass[tone])}>{children}</span>
 );
 
 // ---- demo-kpis ----
@@ -70,7 +70,7 @@ const EvolutionSurfacePreview = ({ data }: { data: { rules: RuleCandidate[]; pro
     <div className="mb-1 text-[10px] uppercase tracking-wide text-hud-textDim">Rule candidates</div>
     <div className="mb-3 space-y-1.5">
       {data.rules.map((r) => (
-        <div key={r.id} className="rounded-sm border border-hud-border bg-hud-panelAlt p-2 text-[11px]">
+        <div key={r.id} className="glass-inset p-2 text-[11px]">
           <div className="flex items-center justify-between">
             <span className="text-hud-text">{r.summary}</span>
             <Pill>{r.status}</Pill>
@@ -82,7 +82,7 @@ const EvolutionSurfacePreview = ({ data }: { data: { rules: RuleCandidate[]; pro
     <div className="mb-1 text-[10px] uppercase tracking-wide text-hud-textDim">Evolution proposals</div>
     <div className="space-y-1.5">
       {data.proposals.map((p) => (
-        <div key={p.id} className="rounded-sm border border-hud-border bg-hud-panelAlt p-2 text-[11px]">
+        <div key={p.id} className="glass-inset p-2 text-[11px]">
           <div className="flex items-center justify-between">
             <span className="text-hud-text">{p.summary}</span>
             <Pill tone={p.risk}>{p.risk}</Pill>
@@ -105,15 +105,15 @@ const ExecutiveOperationsPreview = ({ data }: { data: { workflows: Workflow[] } 
   return (
     <Panel title="Executive Operations Panel">
       <div className="mb-3 grid grid-cols-3 gap-2 text-center">
-        <div className="rounded-sm border border-hud-border bg-hud-panelAlt py-2">
+        <div className="glass-inset py-2">
           <div className="text-lg font-semibold text-hud-cyan">{active}</div>
           <div className="text-[9px] text-hud-textDim">active</div>
         </div>
-        <div className="rounded-sm border border-hud-border bg-hud-panelAlt py-2">
+        <div className="glass-inset py-2">
           <div className="text-lg font-semibold text-hud-red">{blocked}</div>
           <div className="text-[9px] text-hud-textDim">blocked</div>
         </div>
-        <div className="rounded-sm border border-hud-border bg-hud-panelAlt py-2">
+        <div className="glass-inset py-2">
           <div className="text-lg font-semibold text-hud-green">{Math.round(avgConfidence * 100)}%</div>
           <div className="text-[9px] text-hud-textDim">confidence</div>
         </div>
@@ -122,7 +122,7 @@ const ExecutiveOperationsPreview = ({ data }: { data: { workflows: Workflow[] } 
         {data.workflows.map((w) => {
           const done = w.phases.filter((p) => p.state === "COMPLETED").length;
           return (
-            <div key={w.id} className="rounded-sm border border-hud-border bg-hud-panelAlt p-2 text-[11px]">
+            <div key={w.id} className="glass-inset p-2 text-[11px]">
               <div className="flex items-center justify-between">
                 <span className="text-hud-text">{w.objective.businessGoal}</span>
                 <Pill tone={w.riskProfile}>{w.governanceState}</Pill>
@@ -174,7 +174,7 @@ const DiffPreviewPanelPreview = ({ data }: { data: ChangePreview }) => (
     <Stat label="Risk" value={data.risk} tone={data.risk} />
     <Stat label="Cost" value={data.cost} />
     <Meter label="Confidence" value={data.confidence} />
-    <div className="mt-2 space-y-1 rounded-sm border border-hud-border bg-hud-panelAlt p-2 text-[10px] text-hud-textDim">
+    <div className="mt-2 space-y-1 glass-inset p-2 text-[10px] text-hud-textDim">
       {data.beforeAfterConceptual.map((line, i) => (
         <div key={i}>{line}</div>
       ))}
@@ -213,7 +213,7 @@ const StrategicOperationsPreview = ({ data }: { data: { graph: OrganizationGraph
     <KpiGrid kpis={data.kpis} />
     <div className="mt-2 space-y-1">
       {data.graph.organizations.map((org) => (
-        <div key={org.name} className="rounded-sm border border-hud-border bg-hud-panelAlt p-2 text-[11px]">
+        <div key={org.name} className="glass-inset p-2 text-[11px]">
           <div className="text-hud-text">{org.name}</div>
           {org.divisions.map((d) => (
             <Meter key={d.name} label={d.name} value={d.performance} />
@@ -230,7 +230,7 @@ const ExecutiveCommandCenterPreview = ({ data }: { data: { graph: OrganizationGr
     <div className="mt-2 text-[10px] uppercase tracking-wide text-hud-textDim">Heatmaps</div>
     <div className="mt-1 grid grid-cols-2 gap-1.5 text-[10px]">
       {Object.entries(data.heatmaps).map(([key, values]) => (
-        <div key={key} className="rounded-sm border border-hud-border bg-hud-panelAlt px-2 py-1">
+        <div key={key} className="glass-inset px-2 py-1">
           <div className="text-hud-textDim">{key.replace(/Map$/, "")}</div>
           <div className="text-hud-cyan">{values.map((v) => v.toFixed(2)).join(", ") || "--"}</div>
         </div>
@@ -256,11 +256,11 @@ const LoopDiagnosticPreview = ({ data }: { data: { nodes: ExecutionNodeLite[] } 
   return (
     <Panel title="Loop Diagnostic Panel">
       {signatures.length === 0 ? (
-        <div className="rounded-sm border border-hud-cyanDim/40 bg-hud-cyan/5 p-3 text-center text-[11px] text-hud-cyan">LOOP OK</div>
+        <div className="rounded-lg border border-hud-cyanDim/30 bg-hud-cyan/5 p-3 text-center text-[11px] text-hud-cyan backdrop-blur-sm">LOOP OK</div>
       ) : (
         <div className="space-y-1">
           {signatures.map((n) => (
-            <div key={n.id} className="rounded-sm border border-hud-red/40 bg-hud-red/10 p-2 text-[11px] text-hud-red">
+            <div key={n.id} className="rounded-lg border border-hud-red/30 bg-hud-red/10 p-2 text-[11px] text-hud-red backdrop-blur-sm">
               LOOP ALERT: {n.id} retries:{n.retries} state:{n.state}
             </div>
           ))}
@@ -310,7 +310,7 @@ const ReasoningInspectorPreview = ({ data }: { data: { narratives: Narrative[] }
   <Panel title="Reasoning Inspector Panel">
     <div className="space-y-1.5">
       {data.narratives.map((n) => (
-        <div key={n.id} className="rounded-sm border border-hud-border bg-hud-panelAlt p-2 text-[11px]">
+        <div key={n.id} className="glass-inset p-2 text-[11px]">
           <Pill>{n.kind}</Pill>
           <p className="mt-1 text-hud-text">{n.text}</p>
         </div>
@@ -328,8 +328,8 @@ const ReplayTheaterPreview = ({ data }: { data: { timeline: CinematicTimeline; s
     <div className="flex items-end gap-2">
       {data.timeline.beats.map((b) => (
         <div key={b.id} className="flex flex-1 flex-col items-center gap-1">
-          <div className="flex h-16 w-full items-end rounded-sm bg-hud-panelAlt">
-            <div className="w-full rounded-sm bg-hud-cyan" style={{ height: `${b.intensity * 100}%` }} />
+          <div className="flex h-16 w-full items-end rounded-md bg-white/5">
+            <div className="w-full rounded-md bg-hud-cyan shadow-[0_0_10px_rgba(34,211,238,0.5)]" style={{ height: `${b.intensity * 100}%` }} />
           </div>
           <span className="text-[9px] text-hud-textDim">{b.type}</span>
         </div>
@@ -349,7 +349,7 @@ const RepoCanvasPreview = ({ data }: { data: { nodes: RepoNodeLite[]; selectedNo
           key={n.id}
           className={cn(
             "flex items-center justify-between rounded-sm border px-2 py-1.5 text-[11px]",
-            n.id === data.selectedNodeId ? "border-hud-cyan bg-hud-cyan/10" : "border-hud-border bg-hud-panelAlt"
+            n.id === data.selectedNodeId ? "border-hud-cyan bg-hud-cyan/10" : "border-white/8 bg-white/5"
           )}
         >
           <span>
@@ -416,7 +416,7 @@ const ProductShellPreview = ({ data }: { data: ProductShellData }) => (
     </div>
     <div className="space-y-1">
       {data.scenario.steps.map((s) => (
-        <div key={s.name} className="flex items-center justify-between rounded-sm border border-hud-border bg-hud-panelAlt px-2 py-1 text-[11px]">
+        <div key={s.name} className="flex items-center justify-between glass-inset px-2 py-1 text-[11px]">
           <span className="text-hud-text">{s.name}</span>
           <span className={s.status === "completed" ? "text-hud-green" : "text-hud-textDim"}>{s.status}</span>
         </div>

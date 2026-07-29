@@ -24,7 +24,7 @@ export const Tabs = ({
 };
 
 export const TabsList = ({ className, children }: { className?: string; children: React.ReactNode }) => (
-  <div className={cn("flex gap-1 border-b border-hud-border px-2 py-1", className)}>{children}</div>
+  <div className={cn("flex gap-1 border-b border-white/8 px-2 py-1", className)}>{children}</div>
 );
 
 export const TabsTrigger = ({ value, children }: { value: string; children: React.ReactNode }) => {
@@ -36,8 +36,8 @@ export const TabsTrigger = ({ value, children }: { value: string; children: Reac
       type="button"
       onClick={() => ctx.setValue(value)}
       className={cn(
-        "rounded-sm px-2 py-1 text-[11px] font-medium uppercase tracking-wide transition-colors",
-        active ? "bg-hud-cyan/10 text-hud-cyan" : "text-hud-textDim hover:text-hud-text"
+        "rounded-full px-2.5 py-1 text-[11px] font-medium uppercase tracking-wide backdrop-blur-sm transition-colors",
+        active ? "bg-hud-cyan/15 text-hud-cyan shadow-[inset_0_0_0_1px_rgba(34,211,238,0.25)]" : "text-hud-textDim hover:bg-white/5 hover:text-hud-text"
       )}
     >
       {children}

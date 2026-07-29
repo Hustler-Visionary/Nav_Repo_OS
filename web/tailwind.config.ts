@@ -27,7 +27,12 @@ const config: Config = {
       },
       boxShadow: {
         glow: "0 0 24px rgba(34, 211, 238, 0.15)",
-        glowMagenta: "0 0 24px rgba(232, 121, 249, 0.15)"
+        glowMagenta: "0 0 24px rgba(232, 121, 249, 0.15)",
+        glass: "0 8px 32px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.05)",
+        glassLg: "0 24px 64px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.06)"
+      },
+      backdropBlur: {
+        xs: "2px"
       }
     }
   },

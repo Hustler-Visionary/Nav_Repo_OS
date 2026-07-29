@@ -43,7 +43,7 @@ const Avatar = ({ blocked }: { blocked?: boolean }) => (
 const TypingBubble = () => (
   <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="flex items-end gap-1.5">
     <Avatar />
-    <div className="flex items-center gap-1 rounded-2xl rounded-bl-sm border border-hud-border bg-hud-panelAlt px-3 py-2.5">
+    <div className="flex items-center gap-1 rounded-2xl rounded-bl-sm border border-white/8 bg-white/5 px-3 py-2.5 backdrop-blur-sm">
       {[0, 1, 2].map((i) => (
         <motion.span
           key={i}
@@ -71,10 +71,10 @@ const Bubble = ({ message, showAvatar }: { message: ChatMessage; showAvatar: boo
       <div className={cn("flex max-w-[78%] flex-col", isUser && "items-end")}>
         <div
           className={cn(
-            "rounded-2xl px-3 py-2",
-            isUser && "rounded-br-sm border border-hud-cyanDim/50 bg-hud-cyan/15 text-hud-text",
-            !isUser && !isBlocked && "rounded-bl-sm border border-hud-border bg-hud-panelAlt text-hud-text",
-            isBlocked && "rounded-bl-sm border border-hud-red/40 bg-hud-red/10 text-hud-text"
+            "rounded-2xl px-3 py-2 backdrop-blur-sm",
+            isUser && "rounded-br-sm border border-hud-cyanDim/40 bg-hud-cyan/15 text-hud-text shadow-[0_4px_16px_rgba(34,211,238,0.1)]",
+            !isUser && !isBlocked && "rounded-bl-sm border border-white/8 bg-white/5 text-hud-text",
+            isBlocked && "rounded-bl-sm border border-hud-red/30 bg-hud-red/10 text-hud-text"
           )}
         >
           {isBlocked && (
@@ -316,8 +316,8 @@ export const ChatPanel = () => {
   let lastRole: ChatMessage["role"] | null = null;
 
   return (
-    <div className="flex h-full min-h-0 flex-col rounded-sm border border-hud-border bg-hud-panel">
-      <div className="flex items-center gap-2 border-b border-hud-border px-2.5 py-2">
+    <div className="flex h-full min-h-0 flex-col">
+      <div className="flex items-center gap-2 border-b border-white/8 px-2.5 py-2">
         {showList ? (
           <button onClick={() => setShowList(false)} className="text-hud-textDim hover:text-hud-cyan">
             <ArrowLeft size={16} />
@@ -329,8 +329,8 @@ export const ChatPanel = () => {
             </div>
             <span
               className={cn(
-                "absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-hud-panel",
-                busOnline ? "bg-hud-green" : "bg-hud-red"
+                "absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-[#0a0f16]",
+                busOnline ? "bg-hud-green shadow-[0_0_6px_rgba(52,211,153,0.8)]" : "bg-hud-red"
               )}
             />
           </div>
@@ -365,7 +365,7 @@ export const ChatPanel = () => {
             {historyLoaded && messages.length === 0 && (
               <div className="flex items-end gap-1.5">
                 <Avatar />
-                <div className="max-w-[78%] rounded-2xl rounded-bl-sm border border-hud-border bg-hud-panelAlt px-3 py-2 text-[11px] leading-relaxed text-hud-textDim">
+                <div className="max-w-[78%] rounded-2xl rounded-bl-sm border border-white/8 bg-white/5 px-3 py-2 text-[11px] leading-relaxed text-hud-textDim backdrop-blur-sm">
                   {HELP_TEXT}
                 </div>
               </div>
@@ -378,7 +378,7 @@ export const ChatPanel = () => {
             <AnimatePresence>{pendingCount > 0 && <TypingBubble key="typing" />}</AnimatePresence>
           </div>
 
-          <div className="flex items-end gap-1.5 border-t border-hud-border p-2">
+          <div className="flex items-end gap-1.5 border-t border-white/8 p-2">
             <textarea
               ref={textareaRef}
               rows={1}
@@ -391,12 +391,12 @@ export const ChatPanel = () => {
                 }
               }}
               placeholder="Escribe un mensaje..."
-              className="min-w-0 flex-1 resize-none rounded-2xl border border-hud-border bg-hud-bg px-3 py-2 text-[12px] text-hud-text placeholder:text-hud-textDim focus:border-hud-cyan focus:outline-none"
+              className="glass-inset min-w-0 flex-1 resize-none px-3 py-2 text-[12px] text-hud-text placeholder:text-hud-textDim focus:outline-none focus:ring-1 focus:ring-hud-cyan/50"
             />
             <button
               onClick={submit}
               disabled={!input.trim()}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-hud-cyanDim bg-hud-cyan/10 text-hud-cyan transition-colors hover:bg-hud-cyan/20 disabled:opacity-30"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-hud-cyanDim/60 bg-hud-cyan/10 text-hud-cyan backdrop-blur-sm transition-colors hover:bg-hud-cyan/20 disabled:opacity-30"
             >
               <Send size={14} />
             </button>

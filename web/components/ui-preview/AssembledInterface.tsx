@@ -37,7 +37,7 @@ export const AssembledInterface = () => {
   if (!samples) return <div className="p-4 text-[10px] uppercase tracking-widest text-hud-textDim">Assembling interface from real domain data...</div>;
 
   return (
-    <div className="h-full space-y-3 overflow-y-auto p-4">
+    <div className="h-full space-y-3 overflow-y-auto p-4 pt-14">
       {LAYOUT.map((row, i) => (
         <div key={i} className="grid gap-3" style={{ gridTemplateColumns: `repeat(${row.length}, minmax(0, 1fr))` }}>
           {row.map((path) => {

@@ -21,7 +21,7 @@ const nodeTypes = { repoNode: RepoNodeChip };
 const NodeDetailPanel = dynamic(() => import("./NodeDetailPanel").then((m) => m.NodeDetailPanel), {
   ssr: false,
   loading: () => (
-    <div className="absolute right-3 top-3 z-20 w-[420px] rounded-sm border border-hud-border bg-hud-panel/90 px-3 py-2 text-[10px] uppercase tracking-widest text-hud-textDim">
+    <div className="glass-panel-strong absolute right-3 top-3 z-20 w-[420px] rounded-2xl px-3 py-2 text-[10px] uppercase tracking-widest text-hud-textDim">
       Loading panel...
     </div>
   )
@@ -78,14 +78,14 @@ export const RepoGraphCanvas = ({ graph, error }: { graph: RepoGraph | null; err
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="SEARCH_NODES..."
-          className="w-64 rounded-sm border border-hud-border bg-hud-panel/90 px-2 py-1 text-[11px] text-hud-text placeholder:text-hud-textDim focus:border-hud-cyan focus:outline-none"
+          className="glass-panel-strong w-64 rounded-full px-3 py-1.5 text-[11px] text-hud-text placeholder:text-hud-textDim focus:outline-none focus:ring-1 focus:ring-hud-cyan/50"
         />
         {graph && (
-          <span className="rounded-sm border border-hud-border bg-hud-panel/80 px-2 py-1 text-[10px] text-hud-textDim">
+          <span className="glass-panel-strong rounded-full px-3 py-1.5 text-[10px] text-hud-textDim">
             {graph.nodes.length} nodes / {graph.edges.length} edges &middot; {graph.scannedRoot}
           </span>
         )}
-        {error && <span className="rounded-sm border border-hud-red/40 bg-hud-red/10 px-2 py-1 text-[10px] text-hud-red">{error}</span>}
+        {error && <span className="glass-panel-strong !border-hud-red/40 rounded-full px-3 py-1.5 text-[10px] text-hud-red">{error}</span>}
       </div>
 
       {!graph && !error && (
@@ -109,8 +109,8 @@ export const RepoGraphCanvas = ({ graph, error }: { graph: RepoGraph | null; err
           minZoom={0.1}
           proOptions={{ hideAttribution: true }}
         >
-          <Background variant={BackgroundVariant.Dots} color="#12202b" gap={24} size={1} />
-          <Controls className="!bg-hud-panel !border-hud-border [&>button]:!bg-hud-panel [&>button]:!border-hud-border [&>button]:!text-hud-cyan" />
+          <Background variant={BackgroundVariant.Dots} color="#16283a" gap={24} size={1} />
+          <Controls className="!overflow-hidden !rounded-xl !border !border-white/10 !bg-hud-panel/50 !shadow-glass !backdrop-blur-xl [&>button]:!border-white/8 [&>button]:!bg-transparent [&>button]:!text-hud-cyan [&>button:hover]:!bg-hud-cyan/10" />
         </ReactFlow>
       )}
 

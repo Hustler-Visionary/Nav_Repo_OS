@@ -68,10 +68,10 @@ export const RepoOsShell = () => {
   }, [graph]);
 
   return (
-    <div className="hud-scanlines flex h-screen w-screen flex-col overflow-hidden bg-hud-bg text-hud-text">
-      <header className="flex items-center justify-between border-b border-hud-border px-4 py-2">
+    <div className="hud-scanlines flex h-screen w-screen flex-col overflow-hidden text-hud-text">
+      <header className="glass-panel-strong z-40 m-2 mb-0 flex items-center justify-between rounded-2xl px-4 py-2.5">
         <div className="flex items-center gap-6">
-          <span className="text-sm font-bold tracking-[0.2em] text-hud-cyan">REPO_OS</span>
+          <span className="text-sm font-bold tracking-[0.2em] text-hud-cyan drop-shadow-[0_0_12px_rgba(34,211,238,0.35)]">REPO_OS</span>
           <nav className="flex gap-4 text-[11px] tracking-wider text-hud-textDim">
             {topTabs.map((tab, i) => (
               <span key={tab} className={i === 0 ? "border-b border-hud-cyan pb-1 text-hud-cyan" : "cursor-default opacity-60"}>
@@ -86,8 +86,8 @@ export const RepoOsShell = () => {
         </div>
       </header>
 
-      <div className="flex flex-1 overflow-hidden">
-        <aside className="flex w-48 shrink-0 flex-col border-r border-hud-border px-3 py-3">
+      <div className="flex flex-1 gap-2 overflow-hidden p-2">
+        <aside className="glass-panel flex w-48 shrink-0 flex-col rounded-2xl px-3 py-3">
           <div className="mb-4">
             <div className="text-sm font-semibold text-hud-text">NODE_MANAGER</div>
             <div className="text-[9px] text-hud-textDim">v0.9.4 // STABLE</div>
@@ -97,8 +97,10 @@ export const RepoOsShell = () => {
               <button
                 key={key}
                 onClick={() => setActiveNav(key)}
-                className={`flex items-center gap-2 rounded-sm px-2 py-1.5 text-left text-[11px] tracking-wide ${
-                  activeNav === key ? "bg-hud-cyan/10 text-hud-cyan" : "text-hud-textDim hover:text-hud-text"
+                className={`flex items-center gap-2 rounded-lg px-2 py-1.5 text-left text-[11px] tracking-wide transition-colors ${
+                  activeNav === key
+                    ? "bg-hud-cyan/15 text-hud-cyan shadow-[inset_0_0_0_1px_rgba(34,211,238,0.25)]"
+                    : "text-hud-textDim hover:bg-white/5 hover:text-hud-text"
                 }`}
               >
                 <Icon size={13} />
@@ -109,7 +111,7 @@ export const RepoOsShell = () => {
 
           <div className="mt-6 flex-1 overflow-hidden">
             <div className="mb-1 text-[10px] uppercase tracking-widest text-hud-textDim">Activity Log</div>
-            <div className="space-y-1.5 text-[10px] text-hud-textDim">
+            <div className="glass-inset space-y-1.5 p-2 text-[10px] text-hud-textDim">
               {graph ? (
                 <>
                   <div><span className="text-hud-cyan">{new Date().toLocaleTimeString()}</span> graph_loaded: {graph.nodes.length} nodes</div>
@@ -123,18 +125,18 @@ export const RepoOsShell = () => {
           </div>
         </aside>
 
-        <main className="relative flex-1">
+        <main className="glass-panel relative flex-1 overflow-hidden rounded-2xl">
           {activeNav === "ui" && (
-            <div className="absolute left-3 top-3 z-30 flex overflow-hidden rounded-sm border border-hud-border bg-hud-panel/90 text-[10px] uppercase tracking-wide">
+            <div className="glass-panel-strong absolute left-3 top-3 z-30 flex overflow-hidden rounded-full text-[10px] uppercase tracking-wide">
               <button
                 onClick={() => setUiMode("interface")}
-                className={cn("px-2.5 py-1.5", uiMode === "interface" ? "bg-hud-cyan/10 text-hud-cyan" : "text-hud-textDim hover:text-hud-text")}
+                className={cn("rounded-full px-3 py-1.5 transition-colors", uiMode === "interface" ? "bg-hud-cyan/15 text-hud-cyan" : "text-hud-textDim hover:text-hud-text")}
               >
                 Full Interface
               </button>
               <button
                 onClick={() => setUiMode("graph")}
-                className={cn("border-l border-hud-border px-2.5 py-1.5", uiMode === "graph" ? "bg-hud-cyan/10 text-hud-cyan" : "text-hud-textDim hover:text-hud-text")}
+                className={cn("rounded-full px-3 py-1.5 transition-colors", uiMode === "graph" ? "bg-hud-cyan/15 text-hud-cyan" : "text-hud-textDim hover:text-hud-text")}
               >
                 Graph
               </button>
@@ -152,9 +154,9 @@ export const RepoOsShell = () => {
           )}
         </main>
 
-        <aside className="flex w-80 shrink-0 flex-col gap-3 border-l border-hud-border px-3 py-3">
-          <div className="flex shrink-0 gap-3">
-            <div className="flex-1 rounded-sm border border-hud-border bg-hud-panel p-2">
+        <aside className="flex w-80 shrink-0 flex-col gap-2">
+          <div className="flex shrink-0 gap-2">
+            <div className="glass-panel flex-1 rounded-2xl p-2.5">
               <div className="text-[10px] uppercase tracking-widest text-hud-textDim">System Status</div>
               <div className="mt-1 flex items-baseline justify-between">
                 <span className="text-[10px] text-hud-textDim">Connectivity</span>
@@ -170,23 +172,23 @@ export const RepoOsShell = () => {
               </div>
             </div>
 
-            <div className="flex-1 rounded-sm border border-hud-border bg-hud-panel p-2">
+            <div className="glass-panel flex-1 rounded-2xl p-2.5">
               <div className="flex items-center justify-between text-[10px] uppercase tracking-widest text-hud-textDim">
                 <span>Data Stream</span>
-                <span className="h-1.5 w-1.5 rounded-full bg-hud-green" />
+                <span className="h-1.5 w-1.5 rounded-full bg-hud-green shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
               </div>
               <div className="mt-1 text-[10px] text-hud-textDim">Layers: <span className="text-hud-text">{stats?.layers ?? "--"}</span></div>
               <div className="text-[10px] text-hud-textDim">Mode: <span className="text-hud-cyan">read-only-real</span></div>
             </div>
           </div>
 
-          <div className="min-h-0 flex-1">
+          <div className="glass-panel min-h-0 flex-1 overflow-hidden rounded-2xl">
             <ChatPanel />
           </div>
         </aside>
       </div>
 
-      <footer className="flex items-center justify-between border-t border-hud-border px-4 py-1 text-[10px] text-hud-textDim">
+      <footer className="glass-panel-strong m-2 mt-0 flex items-center justify-between rounded-2xl px-4 py-1.5 text-[10px] text-hud-textDim">
         <span>REPO_OS // HUD</span>
         <span>STATUS: {error ? "ERROR" : graph ? "OPTIMAL" : "SYNCING"} &middot; ENCRYPTION: SHA-256 &middot; THREAT: LOW</span>
         <span>LOGS &middot; DIAGNOSTICS &middot; UPLINK</span>

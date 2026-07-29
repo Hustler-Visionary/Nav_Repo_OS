@@ -32,7 +32,7 @@ export const ConversationList = ({
   <div className="flex h-full flex-col">
     <button
       onClick={onNew}
-      className="m-2 flex items-center justify-center gap-1.5 rounded-full border border-hud-cyanDim bg-hud-cyan/10 py-2 text-[11px] font-medium text-hud-cyan hover:bg-hud-cyan/20"
+      className="m-2 flex items-center justify-center gap-1.5 rounded-full border border-hud-cyanDim/60 bg-hud-cyan/10 py-2 text-[11px] font-medium text-hud-cyan backdrop-blur-sm hover:bg-hud-cyan/20"
     >
       <MessageSquarePlus size={13} />
       Nueva conversación

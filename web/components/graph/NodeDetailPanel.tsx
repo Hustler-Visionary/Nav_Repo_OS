@@ -112,7 +112,7 @@ export const NodeDetailPanel = ({ node, onClose }: { node: GraphNode; onClose: (
 
             {isUiNode && (
               <TabsContent value="preview">
-                <div className="max-h-80 overflow-y-auto rounded-sm border border-hud-border bg-hud-bg p-2">
+                <div className="glass-inset max-h-80 overflow-y-auto p-2">
                   {previewError && <p className="text-[11px] text-hud-red">preview unavailable: {previewError}</p>}
                   {!previewError && !preview && <p className="text-[10px] uppercase tracking-widest text-hud-textDim">Building live preview from real domain data...</p>}
                   {PreviewComponent && preview && <PreviewComponent data={preview.data} />}
@@ -125,7 +125,7 @@ export const NodeDetailPanel = ({ node, onClose }: { node: GraphNode; onClose: (
             )}
 
             <TabsContent value="code">
-              <div onMouseEnter={loadSource} className="h-64 overflow-hidden rounded-sm border border-hud-border">
+              <div onMouseEnter={loadSource} className="glass-inset h-64 overflow-hidden">
                 {source === null ? (
                   <div className="flex h-full items-center justify-center text-[10px] uppercase tracking-widest text-hud-textDim" onClick={loadSource}>
                     {loadingSource ? "Reading real file..." : "Hover or click to load source"}
