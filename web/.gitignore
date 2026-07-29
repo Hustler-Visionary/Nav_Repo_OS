@@ -3,3 +3,4 @@ node_modules/
 public/monaco/
 .nats-bin/
 .nats-data/
+tsconfig.tsbuildinfo
