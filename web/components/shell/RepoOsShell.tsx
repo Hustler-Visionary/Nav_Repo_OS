@@ -7,7 +7,7 @@ import { ChatPanel } from "../chat/ChatPanel";
 import type { RepoGraph } from "../../lib/types";
 
 const navItems = [
-  { key: "root", label: "ROOT", icon: Folder },
+  { key: "root", label: "Explore Repository", icon: Folder },
   { key: "metadata", label: "METADATA", icon: Database },
   { key: "history", label: "HISTORY", icon: HistoryIcon },
   { key: "network", label: "NETWORK", icon: Share2 }
