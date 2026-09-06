@@ -852,3 +852,26 @@ Se agrega Unified Runtime Kernel y External Integration con estrategia disabled-
 ### Qué falta
 - El bus solo corre localmente (un `nats-server` por instancia de dev/build), sin clustering ni persistencia fuera de `web/.nats-data`.
 - El firewall es un allowlist fijo de 4 verbos; ampliarlo requiere agregar reglas explícitas, nunca interpretación abierta de texto.
+
+## Fase 27.4: Backend API — NestJS + GraphQL + JWT + RBAC + CASL + Zod + CORS
+
+### Qué existe realmente
+- Primer backend HTTP real del monorepo, en `apps/api/` (`@tst-autonomous/api`), como app independiente junto a `apps/web/` (build vía `tsc` plano, no Nest CLI, para mantenerse consistente con el resto del monorepo).
+- **GraphQL code-first** (`@nestjs/graphql` + `@nestjs/apollo`), schema autogenerado en `apps/api/src/schema.gql`, expuesto en `/graphql`; `GET /health` como endpoint REST simple.
+- **JWT real** (`@nestjs/jwt` + `passport-jwt`): mutations `register`/`login` emiten un access token firmado (`sub`, `email`, `roles`); `JwtStrategy.validate()` reconsulta el usuario en cada request (una cuenta borrada pierde acceso de inmediato, no solo en el próximo login). `GqlAuthGuard` adapta el guard estándar de Passport al contexto de GraphQL.
+- **RBAC + CASL combinados, no paralelos**: `Role` (`ADMIN`/`USER`) decide qué rama de reglas aplica; `CaslAbilityFactory` expresa qué puede hacer cada rama sobre el recurso demo `Task`, incluyendo condiciones de propiedad (`ownerId === user.id`) que un `@Roles()` a secas no puede expresar. Chequeo de clase (`@CheckPolicies` a nivel de guard, ej. "puede crear Task") separado del chequeo de instancia (`assertCan()` en el servicio, ej. "puede editar *esta* Task"), porque el segundo necesita el registro ya cargado.
+- **Zod en vez de class-validator** en todo el proyecto: `ZodValidationPipe` genérico aplicado por argumento (`@Args("input", new ZodValidationPipe(schema))`), incluyendo la validación de variables de entorno al boot (`env.schema.ts`, falla rápido si falta `JWT_SECRET` o mide menos de 32 caracteres — sin fallback inseguro).
+- **CORS real**, configurado una sola vez en `main.ts` (`app.enableCors`) para que REST y GraphQL compartan la misma política; origen por allowlist (`CORS_ORIGIN`, csv) con default seguro: `http://localhost:3000` fuera de producción, ningún origen permitido si `NODE_ENV=production` y no se configuró explícitamente.
+- Semilla de administrador **opt-in** vía `SEED_ADMIN_EMAIL`/`SEED_ADMIN_PASSWORD` (sin credencial por defecto hardcodeada); `formatError` de GraphQL oculta stacktraces e internals en producción.
+- Validado end-to-end contra un servidor real corriendo: registro/login, aislamiento de tareas entre dos usuarios `USER` (`ForbiddenException`, código `FORBIDDEN`/403 real, no un 500 genérico), bypass de un `ADMIN` vía `Action.Manage, "all"`, rechazo sin autenticar, validación Zod de inputs inválidos, y headers CORS correctos para origen permitido vs. no permitido.
+
+### Qué es mock/simulado
+- `UsersRepository`/`TasksRepository` son in-memory (`InMemoryUsersRepository`, `TasksRepository`), detrás de una interfaz explícita pensada para swap a Postgres/Drizzle (stack canónico de Fase 26.5) sin tocar los servicios ni la lógica de autorización.
+- `Task` es un recurso de demostración para probar JWT+RBAC+CASL+Zod+GraphQL juntos, no un dominio de negocio real; no está conectado a `services/repo-knowledge` ni al resto del dominio TST Autonomous.
+
+### Qué falta
+- Persistencia real (hoy se pierde todo al reiniciar el proceso).
+- Refresh tokens / revocación de sesión (hoy solo hay access token con expiración corta).
+- Conectar `apps/api` a los `services/*` reales (repo-knowledge, governance-compliance, etc.) para exponerlos vía GraphQL en vez de solo el recurso `Task` de demostración.
+- Rate limiting y throttling de login/register.
+- Tests automatizados (`node --test`) para guards, `CaslAbilityFactory` y resolvers — hoy la validación fue manual contra un servidor real, no cobertura persistida en el repo.

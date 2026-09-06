@@ -1,0 +1,31 @@
+version: "3"
+
+tasks:
+  build:
+    desc: Compile the NestJS API
+    cmds:
+      - pnpm build
+
+  dev:
+    desc: Run the API with live reload
+    cmds:
+      - pnpm dev
+
+  test:
+    desc: Run this package's own tests (no-op if it has none)
+    deps: [build]
+    cmds:
+      - sh -c 'ls dist/**/*.test.js >/dev/null 2>&1 && node --test dist/**/*.test.js || echo "no tests in api"'
+
+  docker:build:
+    desc: Build a standalone image for the API via turbo prune
+    deps: [build]
+    cmds:
+      - pnpm exec turbo prune @tst-autonomous/api --docker --out-dir=.turbo-prune/api
+      - docker build -f Dockerfile -t api:local ../.. --build-arg PACKAGE_DIR=apps/api
+
+  docker:push:
+    desc: Push the API's image (tag comes from package.json version)
+    deps: [docker:build]
+    cmds:
+      - sh -c 'V=$(node -p "require(\"./package.json\").version"); docker tag api:local $REGISTRY/api:$V && docker push $REGISTRY/api:$V'

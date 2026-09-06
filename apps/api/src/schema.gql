@@ -1,0 +1,61 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+type AuthPayload {
+  accessToken: String!
+  user: User!
+}
+
+input CreateTaskInput {
+  title: String!
+}
+
+input CreateUserInput {
+  email: String!
+  password: String!
+}
+
+input LoginInput {
+  email: String!
+  password: String!
+}
+
+type Mutation {
+  createTask(input: CreateTaskInput!): Task!
+  login(input: LoginInput!): AuthPayload!
+  register(input: CreateUserInput!): AuthPayload!
+  removeTask(id: ID!): Boolean!
+  updateTask(input: UpdateTaskInput!): Task!
+}
+
+type Query {
+  me: User!
+  task(id: ID!): Task!
+  tasks: [Task!]!
+}
+
+"""Roles this API's RBAC/CASL layer distinguishes between."""
+enum Role {
+  ADMIN
+  USER
+}
+
+type Task {
+  done: Boolean!
+  id: ID!
+  ownerId: ID!
+  title: String!
+}
+
+input UpdateTaskInput {
+  done: Boolean
+  id: ID!
+  title: String
+}
+
+type User {
+  email: String!
+  id: ID!
+  roles: [Role!]!
+}
