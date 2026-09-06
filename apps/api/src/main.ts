@@ -17,6 +17,12 @@ const bootstrap = async (): Promise<void> => {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   const config = app.get(ConfigService<Env, true>);
 
+  // Without this, Nest never calls onModuleDestroy on SIGTERM/SIGINT --
+  // DbModule's pool.end() (see src/db/db.module.ts) would never run, and a
+  // container restart or `docker compose down` would drop connections
+  // uncleanly instead of closing the pool first.
+  app.enableShutdownHooks();
+
   app.enableCors({ origin: resolveCorsOrigin(config), credentials: false });
 
   const port = config.get("PORT", { infer: true });

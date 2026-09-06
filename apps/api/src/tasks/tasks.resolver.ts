@@ -21,12 +21,12 @@ export class TasksResolver {
   constructor(private readonly tasksService: TasksService) {}
 
   @Query(() => [Task])
-  tasks(@CurrentUser() user: AuthenticatedUser): Task[] {
+  tasks(@CurrentUser() user: AuthenticatedUser): Promise<Task[]> {
     return this.tasksService.findAll(user);
   }
 
   @Query(() => Task)
-  task(@Args("id", { type: () => ID }, new ZodValidationPipe(taskIdSchema)) id: string, @CurrentUser() user: AuthenticatedUser): Task {
+  task(@Args("id", { type: () => ID }, new ZodValidationPipe(taskIdSchema)) id: string, @CurrentUser() user: AuthenticatedUser): Promise<Task> {
     return this.tasksService.findOne(id, user);
   }
 
@@ -35,7 +35,7 @@ export class TasksResolver {
   createTask(
     @Args("input", new ZodValidationPipe(createTaskSchema)) input: CreateTaskInput,
     @CurrentUser() user: AuthenticatedUser
-  ): Task {
+  ): Promise<Task> {
     return this.tasksService.create(input.title, user);
   }
 
@@ -43,13 +43,16 @@ export class TasksResolver {
   updateTask(
     @Args("input", new ZodValidationPipe(updateTaskSchema)) input: UpdateTaskInput,
     @CurrentUser() user: AuthenticatedUser
-  ): Task {
+  ): Promise<Task> {
     const { id, ...patch } = input;
     return this.tasksService.update(id, patch, user);
   }
 
   @Mutation(() => Boolean)
-  removeTask(@Args("id", { type: () => ID }, new ZodValidationPipe(taskIdSchema)) id: string, @CurrentUser() user: AuthenticatedUser): boolean {
+  removeTask(
+    @Args("id", { type: () => ID }, new ZodValidationPipe(taskIdSchema)) id: string,
+    @CurrentUser() user: AuthenticatedUser
+  ): Promise<boolean> {
     return this.tasksService.remove(id, user);
   }
 }

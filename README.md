@@ -870,8 +870,28 @@ Se agrega Unified Runtime Kernel y External Integration con estrategia disabled-
 - `Task` es un recurso de demostración para probar JWT+RBAC+CASL+Zod+GraphQL juntos, no un dominio de negocio real; no está conectado a `services/repo-knowledge` ni al resto del dominio TST Autonomous.
 
 ### Qué falta
-- Persistencia real (hoy se pierde todo al reiniciar el proceso).
+- Persistencia real (hoy se pierde todo al reiniciar el proceso). **Resuelto en Fase 27.5.**
 - Refresh tokens / revocación de sesión (hoy solo hay access token con expiración corta).
 - Conectar `apps/api` a los `services/*` reales (repo-knowledge, governance-compliance, etc.) para exponerlos vía GraphQL en vez de solo el recurso `Task` de demostración.
 - Rate limiting y throttling de login/register.
 - Tests automatizados (`node --test`) para guards, `CaslAbilityFactory` y resolvers — hoy la validación fue manual contra un servidor real, no cobertura persistida en el repo.
+
+## Fase 27.5: apps/api conectado a Postgres real vía Drizzle ORM
+
+### Qué existe realmente
+- `UsersRepository`/`TasksRepository` (Fase 27.4) dejaron de ser in-memory: `DrizzleUsersRepository`/`DrizzleTasksRepository` implementan las mismas interfaces contra Postgres real, sin tocar `UsersService`/`TasksService` ni la lógica CASL/RBAC — exactamente el seam para el que esas interfaces se diseñaron.
+- Esquema en `apps/api/src/db/schema/` (`drizzle-orm/pg-core`): `usersTable` (uuid PK, email único, `roles` como **array del mismo enum `Role`** que ya usa GraphQL — una sola fuente de verdad, nunca dos listas de roles) y `tasksTable` (FK a `users.id` con `ON DELETE CASCADE`, índice en `owner_id` porque es la columna que todo chequeo de ownership de CASL filtra/consulta).
+- Conexión vía `drizzle-orm/node-postgres` + `pg.Pool` con límites explícitos (`max`, `idleTimeoutMillis`, `connectionTimeoutMillis` — nunca el default sin límite del driver), inyectada por DI (`DbModule`, tokens `PG_POOL`/`DATABASE_CONNECTION`). `app.enableShutdownHooks()` en `main.ts` hace que `pool.end()` corra de verdad en `SIGTERM`, no solo en un `process.exit` abrupto.
+- Migraciones con el flujo `generate`/`migrate` de Drizzle Kit (`pnpm db:generate`, `pnpm db:migrate`), **no** `push` — versionadas en `apps/api/drizzle/` y corridas como paso propio (`src/db/migrate.ts`, standalone, fuera del arranque de Nest) en vez de auto-migrar en cada boot, que sería una condición de carrera con múltiples réplicas.
+- `DATABASE_URL` requerido sin default (mismo criterio fail-fast que `JWT_SECRET`), apuntando por convención al Postgres de `infra/docker/compose.yaml`.
+- Condición de carrera real corregida: el registro de usuario hacía un check-then-insert (`findByEmail` seguido de `create`); dos registros concurrentes con el mismo email podían pasar ambos el check. Ahora la violación real del `UNIQUE` de Postgres (`23505`) se captura (`db/pg-errors.ts`) y se traduce al mismo `ConflictException` que ya daba el pre-check.
+- Bug real encontrado y corregido durante la validación (no en el build, en ejecución real): campos opcionales de entorno declarados como `KEY=` vacío en `.env` (la convención de todo `.env.example` del repo) llegaban como `""`, no `undefined` — `.optional()` de Zod solo intercepta `undefined`, así que `SEED_ADMIN_EMAIL=`/`SEED_ADMIN_PASSWORD=` vacíos rompían el arranque. Corregido con un preprocesador (`optionalEnv()` en `env.schema.ts`) que normaliza `""` a `undefined` antes de validar.
+- Todo esto se validó con Postgres real (16, vía `infra/docker`, y también verificado contra un Postgres nativo en este entorno de build ante indisponibilidad del daemon Docker): migración aplicada, registro/login con filas reales, unique constraint real, CRUD de `Task` real con RBAC/CASL filtrando por `owner_id`, y **cierre de pool confirmado por `pg_stat_activity`** (0 conexiones tras `SIGTERM`, no solo "el proceso murió").
+
+### Qué es mock/simulado
+- Nada de lo agregado en esta fase es mock: es la primera pieza de infraestructura real (no determinista/no in-memory) del proyecto fuera de la propia interfaz web.
+
+### Qué falta
+- Réplica de solo lectura / pooler externo (PgBouncer) para más de una instancia de `apps/api` — hoy un pool por proceso, adecuado para un solo réplica.
+- `drizzle-zod` no se adoptó todavía: encajaría bien con la filosofía "Zod en todo el proyecto" (deriva schemas Zod directo de las tablas), pero los DTOs de entrada actuales (`createUserSchema` con `password`, no `passwordHash`; `updateTaskSchema` parcial) no mapean 1:1 a las columnas sin `.omit()`/`.extend()` — quedó como refinamiento futuro, no como deuda bloqueante.
+- Backups / point-in-time recovery del Postgres local (fuera de alcance para infra de desarrollo, ver `infra/docker/README.md`).

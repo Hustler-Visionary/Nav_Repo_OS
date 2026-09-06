@@ -1,13 +1,15 @@
 import { Logger, Module, type OnModuleInit } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import { DbModule } from "../db/db.module.js";
 import { Role } from "./models/role.enum.js";
-import { InMemoryUsersRepository } from "./users.repository.js";
+import { DrizzleUsersRepository } from "./drizzle-users.repository.js";
 import { USERS_REPOSITORY } from "./users.tokens.js";
 import { UsersService } from "./users.service.js";
 import type { Env } from "../config/env.schema.js";
 
 @Module({
-  providers: [{ provide: USERS_REPOSITORY, useClass: InMemoryUsersRepository }, UsersService],
+  imports: [DbModule],
+  providers: [{ provide: USERS_REPOSITORY, useClass: DrizzleUsersRepository }, UsersService],
   exports: [UsersService]
 })
 export class UsersModule implements OnModuleInit {
