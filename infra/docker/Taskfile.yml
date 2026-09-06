@@ -1,0 +1,29 @@
+version: "3"
+
+tasks:
+  up:
+    desc: Start local infra services in the background
+    cmds:
+      - docker compose up -d
+
+  down:
+    desc: Stop local infra services (keeps volume data under data/)
+    cmds:
+      - docker compose down
+
+  logs:
+    desc: Follow logs for all services (or one, e.g. `task logs -- postgres`)
+    cmds:
+      - docker compose logs -f {{.CLI_ARGS}}
+
+  psql:
+    desc: Open a psql shell against the running postgres service
+    cmds:
+      - sh -c 'set -a; . ./.env 2>/dev/null; set +a; docker compose exec postgres psql -U "${POSTGRES_USER:-tst_autonomous}" -d "${POSTGRES_DB:-tst_autonomous}"'
+
+  reset:
+    desc: DESTROYS local Postgres data -- stops the stack and wipes data/postgres (asks for confirmation)
+    cmds:
+      - sh -c 'printf "This deletes all local Postgres data under data/postgres. Continue? [y/N] "; read ans; [ "$ans" = "y" ] || { echo "aborted"; exit 1; }'
+      - docker compose down
+      - sh -c 'find data/postgres -mindepth 1 -not -name .gitkeep -exec rm -rf {} +'

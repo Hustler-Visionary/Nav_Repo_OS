@@ -1,0 +1,43 @@
+name: tst-autonomous
+
+# Local/dev infra only. Every service here is deliberately shaped to make a
+# later move to Kubernetes a straight port, not a redesign -- see README.md
+# in this directory for the discipline this file follows.
+
+services:
+  postgres:
+    image: postgres:16.4-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-tst_autonomous}
+      # No insecure default: compose refuses to start rather than fall back to a built-in password.
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required -- copy .env.example to .env and set it}
+      POSTGRES_DB: ${POSTGRES_DB:-tst_autonomous}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      # Bind-mounted to a directory named after this service on purpose: in
+      # Kubernetes this becomes a PersistentVolumeClaim named "postgres"
+      # mounted at the same container path -- same name, same shape, no
+      # remapping to work out at migration time.
+      - ./data/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-tst_autonomous} -d ${POSTGRES_DB:-tst_autonomous}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1G
+        reservations:
+          memory: 256M
+    networks:
+      - tst-autonomous
+
+networks:
+  tst-autonomous:
+    name: tst-autonomous

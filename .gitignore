@@ -4,3 +4,8 @@ dist/
 .turbo/
 .env
 .env.local
+
+# Local infra volume data (infra/docker/README.md): config is versioned, state is not.
+infra/docker/data/**
+!infra/docker/data/**/
+!infra/docker/data/**/.gitkeep
