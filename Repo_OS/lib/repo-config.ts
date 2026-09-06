@@ -3,7 +3,7 @@ import path from "node:path";
 /**
  * The repo being explored by the graph + Monaco code viewer. Defaults to
  * this app's own parent directory (today's self-hosted arrangement, where
- * web/ lives inside the repo it visualizes). Set TARGET_REPO_ROOT to point
+ * Repo_OS/ lives inside the repo it visualizes). Set TARGET_REPO_ROOT to point
  * REPO_OS at a different, real repository without code changes.
  *
  * This only affects the generic parts (file-scan graph, dependency edges,
