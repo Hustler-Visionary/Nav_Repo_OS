@@ -852,3 +852,26 @@ Se agrega Unified Runtime Kernel y External Integration con estrategia disabled-
 ### Qué falta
 - El bus solo corre localmente (un `nats-server` por instancia de dev/build), sin clustering ni persistencia fuera de `web/.nats-data`.
 - El firewall es un allowlist fijo de 4 verbos; ampliarlo requiere agregar reglas explícitas, nunca interpretación abierta de texto.
+
+## Fase 27.3: Chat con Historial Real, Assembled Interface y Repo Objetivo Configurable
+
+### Qué existe realmente
+- **Historial de chat persistido en JetStream**: cada sesión escribe su transcript en el subject `repo.chat.<sessionId>` del stream `REPO_OS_BUS` (`web/lib/bus.ts`: `logChatEntry`, `fetchChatHistory`, `StorageType.File`, retención `max_age` de 24h). El endpoint `GET /api/chat/history` reconstruye la conversación al recargar la página escaneando el stream, no un array en memoria.
+- **Multi-conversación con paridad de UX con claude.ai** (`web/components/chat/ChatPanel.tsx`, `ConversationList.tsx`, `MarkdownMessage.tsx`, `web/lib/chat-sessions.ts`): lista de conversaciones, streaming de respuesta, render de Markdown y auto-título desde el primer mensaje. El **índice** de sesiones (ids, títulos, `updatedAt`) vive en `localStorage` del navegador — es metadata de cliente; el **contenido** de cada conversación es lo que persiste server-side en el bus.
+- **UX del panel de nodo**: el grafo ahora requiere doble-click para abrir el panel de detalle (un click solo selecciona/resalta el nodo); el panel completo se carga con `next/dynamic` (`RepoGraphCanvas.tsx`), y el resaltado de sintaxis usa el lenguaje real derivado de la extensión del archivo (`web/lib/language.ts`) en vez de un valor fijo. Los nodos del grafo se renderizan como orbes circulares en vez de "pill chips".
+- **Nav del sidebar reestructurado**: `ROOT` se renombra a "Explore Repository" y `METADATA` a `UI`; cada entrada del nav (`root`, `ui`) mantiene su propio estado de grafo cacheado de forma independiente y lo carga de forma perezosa la primera vez que se abre (`RepoOsShell.tsx`) — no es routing por URL de Next.js (no hay `useRouter`/pathname), es estado de cliente por-tab con fetch+cache aislado por vista.
+- **Tab "UI" con dos modos**: `interface` (nuevo, default) ensambla en `AssembledInterface.tsx` varios de los paneles de preview reales (HUD, canvas+editor, overlays de gobernanza, paneles ejecutivos/estratégicos, replay, product shell) en un mockup de dashboard único, alimentado por datos reales de sample de `src/domain` vía `GET /api/ui-preview/all`; `graph` conserva el grafo de dependencias por archivo con preview al hacer click, sin cambios de fondo.
+- **Tab "Preview" con React real por nodo de capa UI** (`736c991`, ya en preparación de esta fase): `web/components/ui-preview/panels.tsx` (446 líneas) implementa ~15 componentes de preview reales (HUD, canvas, editor, overlays, paneles ejecutivo/estratégico/inversor, replay theater, product shell, etc.), cada uno alimentado por datos de muestra derivados de tipos reales de `src/domain` (`web/lib/ui-preview-samples.ts`) — no son imágenes ni mockups estáticos.
+- **Repo objetivo configurable** (`web/lib/repo-config.ts`, `web/.env.example`): `TARGET_REPO_ROOT`, `TARGET_SRC_PATH`, `TARGET_DOMAIN_PATH` y `TARGET_UI_PATH` permiten apuntar el grafo y la lectura de código (`/api/file`, `/api/graph`) a un repositorio distinto sin cambios de código — primer paso hacia soporte multi-proyecto.
+- **Restyle a "glassmorphism premium"**: `globals.css` y ~10 componentes (chat, badges, cards, tabs, canvas, shell) migran a fondos translúcidos con blur, bordes suaves y nueva paleta en `tailwind.config.ts`.
+
+### Qué es mock/simulado
+- El índice de conversaciones (lista, títulos, cuál está activa) es puramente client-side (`localStorage`); no hay usuarios ni autenticación, así que dos navegadores no comparten la misma lista de conversaciones aunque lean el mismo historial de bus si conocen el `sessionId`.
+- El dashboard de `AssembledInterface` sigue usando datos de muestra deterministas de `src/domain` (los mismos que ya eran mock en fases anteriores), solo cambia cómo se presentan (ensamblados vs. uno a la vez).
+- El path de repo configurable **solo** cubre el grafo y la lectura de código genérica. El chat (ejecución de `ejecutar <objetivo>` vía `execute-intent.ts`) y el tab Preview (`ui-preview-samples.ts`) siguen importando funciones específicas del `src/domain` de *este* repositorio en tiempo de build — apuntar `TARGET_REPO_ROOT` a otro repo no reconfigura esas dos rutas.
+
+### Qué falta
+- El historial de chat persiste 24h en una sola instancia local de `nats-server`; no es retención ni disponibilidad de nivel producción.
+- Sin autenticación: cualquiera con acceso a la UI ve/crea sesiones y dispara `ejecutar <objetivo>` dentro del allowlist del firewall.
+- El modo `graph` del tab UI y el resto de vistas del mockup original (minimapa, tabs NODES/TERMINAL/METRICS) siguen sin implementarse.
+- Habilitar un repo objetivo real distinto de este monorepo requiere reescribir `execute-intent.ts` y `ui-preview-samples.ts` para no depender de `src/domain` propio.
