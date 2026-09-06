@@ -1,0 +1,28 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "inputs": ["src/**", "tsconfig.json", "package.json"],
+      "outputs": ["dist/**"]
+    },
+    "test": {
+      "dependsOn": ["build"],
+      "inputs": ["src/**", "dist/**"],
+      "outputs": []
+    },
+    "lint": {
+      "dependsOn": ["^build"],
+      "outputs": []
+    },
+    "docker:build": {
+      "dependsOn": ["build"],
+      "inputs": ["src/**", "Dockerfile", "package.json"],
+      "outputs": []
+    },
+    "docker:push": {
+      "dependsOn": ["docker:build"],
+      "outputs": []
+    }
+  }
+}

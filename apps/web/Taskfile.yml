@@ -1,0 +1,25 @@
+version: "3"
+
+tasks:
+  build:
+    desc: Build the Next.js app (requires its @tst-autonomous/* deps already built)
+    cmds:
+      - pnpm build
+
+  test:
+    desc: No automated tests for apps/web yet
+    cmds:
+      - echo "no tests in apps/web"
+
+  docker:build:
+    desc: Build a standalone image for the web app via turbo prune
+    deps: [build]
+    cmds:
+      - pnpm exec turbo prune web --docker --out-dir=.turbo-prune/web
+      - docker build -f Dockerfile -t web:local ../.. --build-arg PACKAGE_DIR=apps/web
+
+  docker:push:
+    desc: Push the web app's image (tag comes from package.json version)
+    deps: [docker:build]
+    cmds:
+      - sh -c 'V=$(node -p "require(\"./package.json\").version"); docker tag web:local $REGISTRY/web:$V && docker push $REGISTRY/web:$V'

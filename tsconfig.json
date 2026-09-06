@@ -1,19 +1,14 @@
 {
-  "compilerOptions": {
-    "target": "ES2022",
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
-    "strict": true,
-    "noImplicitAny": true,
-    "noUncheckedIndexedAccess": true,
-    "exactOptionalPropertyTypes": true,
-    "outDir": "dist",
-    "rootDir": "src",
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "jsx": "preserve"
-  },
-  "include": [
-    "src"
+  "files": [],
+  "references": [
+    { "path": "packages/kernel" },
+    { "path": "services/governance-compliance" },
+    { "path": "services/repo-knowledge" },
+    { "path": "execution/graph-orchestration" },
+    { "path": "execution/runtime-fabric" },
+    { "path": "services/agent-cognition" },
+    { "path": "infra/platform-integration" },
+    { "path": "services/product-narrative" },
+    { "path": "services/macro-apps" }
   ]
 }
