@@ -1,0 +1,177 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body {
+  background-color: #05070a;
+  color: #cdeef7;
+}
+
+body {
+  background-image:
+    radial-gradient(ellipse 1100px 700px at 8% -10%, rgba(34, 211, 238, 0.14), transparent 60%),
+    radial-gradient(ellipse 900px 650px at 100% 10%, rgba(232, 121, 249, 0.1), transparent 55%),
+    radial-gradient(ellipse 1000px 800px at 50% 120%, rgba(52, 211, 153, 0.07), transparent 60%),
+    linear-gradient(180deg, #060a10 0%, #05070a 55%, #04060a 100%);
+  background-attachment: fixed;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #1b2a38 #05070a;
+}
+
+.hud-scanlines {
+  background-image: repeating-linear-gradient(
+    to bottom,
+    rgba(34, 211, 238, 0.015),
+    rgba(34, 211, 238, 0.015) 1px,
+    transparent 1px,
+    transparent 2px
+  );
+}
+
+/* Premium glass surfaces: translucent, blurred, soft-lit edges. */
+.glass-panel {
+  position: relative;
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(165deg, rgba(20, 28, 42, 0.6), rgba(10, 15, 22, 0.4));
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.glass-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(165deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0) 40%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+.glass-panel-strong {
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: linear-gradient(165deg, rgba(16, 22, 34, 0.78), rgba(8, 12, 19, 0.68));
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.glass-inset {
+  border-radius: 0.65rem;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.react-flow__attribution {
+  display: none;
+}
+
+.chat-markdown {
+  color: #cdeef7;
+  word-break: break-word;
+}
+.chat-markdown > *:first-child {
+  margin-top: 0;
+}
+.chat-markdown > *:last-child {
+  margin-bottom: 0;
+}
+.chat-markdown p {
+  margin: 0.4em 0;
+}
+.chat-markdown ul,
+.chat-markdown ol {
+  margin: 0.4em 0;
+  padding-left: 1.25em;
+}
+.chat-markdown li {
+  margin: 0.15em 0;
+}
+.chat-markdown li::marker {
+  color: #6b8494;
+}
+.chat-markdown a {
+  color: #22d3ee;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.chat-markdown strong {
+  color: #e8fbff;
+  font-weight: 600;
+}
+.chat-markdown blockquote {
+  margin: 0.4em 0;
+  padding-left: 0.75em;
+  border-left: 2px solid #1b2a38;
+  color: #6b8494;
+}
+.chat-markdown hr {
+  border-color: #1b2a38;
+  margin: 0.6em 0;
+}
+.chat-markdown h1,
+.chat-markdown h2,
+.chat-markdown h3 {
+  margin: 0.5em 0 0.25em;
+  font-weight: 700;
+  color: #e8fbff;
+}
+.chat-markdown h1 {
+  font-size: 1.05em;
+}
+.chat-markdown h2 {
+  font-size: 1em;
+}
+.chat-markdown h3 {
+  font-size: 0.95em;
+}
+.chat-markdown :not(pre) > code {
+  background: rgba(34, 211, 238, 0.1);
+  border: 1px solid rgba(34, 211, 238, 0.2);
+  border-radius: 4px;
+  padding: 0.1em 0.35em;
+  font-size: 0.9em;
+  color: #67e8f9;
+}
+.chat-markdown pre {
+  margin: 0.5em 0;
+  padding: 0.6em 0.75em;
+  border-radius: 8px;
+  border: 1px solid #1b2a38;
+  background: #05070a !important;
+  overflow-x: auto;
+  font-size: 0.85em;
+}
+.chat-markdown pre code {
+  background: transparent !important;
+  padding: 0;
+  border: none;
+}
+.chat-markdown table {
+  border-collapse: collapse;
+  margin: 0.5em 0;
+  font-size: 0.9em;
+  display: block;
+  overflow-x: auto;
+}
+.chat-markdown th,
+.chat-markdown td {
+  border: 1px solid #1b2a38;
+  padding: 0.3em 0.6em;
+  text-align: left;
+}
+.chat-markdown th {
+  color: #6b8494;
+  font-weight: 600;
+}

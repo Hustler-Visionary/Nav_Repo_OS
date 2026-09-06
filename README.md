@@ -819,3 +819,59 @@ Se incorpora `src/domain/mcp-fabric/` con modelo de registro, permisos, scope, s
 
 ## Fase 26.7 + 27
 Se agrega Unified Runtime Kernel y External Integration con estrategia disabled-by-default, sandbox-first y governance-first para activación real progresiva sin mutaciones externas por defecto.
+
+## Fase 27.1: REPO_OS Web Interface
+
+### Qué existe realmente
+- Primera interfaz web real del proyecto en `Repo_OS/` (Next.js 14 App Router + React + TailwindCSS + `@xyflow/react` + Monaco + Framer Motion), estilo operacional oscuro ("REPO_OS").
+- El grafo central se construye leyendo en vivo los archivos reales de `src/domain/**` (no mock): `Repo_OS/lib/graph.ts` reutiliza `RealRepoReadOnlyProvider` para lectura segura de archivos y deriva nodos/edges a partir de imports relativos reales.
+- Click en un nodo abre panel de detalle con tabs Code (Monaco, contenido real del archivo vía `/api/file`), Runtime (estado/riesgo/costo) y GNN (métricas heurísticas de acoplamiento — explícitamente etiquetadas como análisis estático, no un modelo entrenado).
+- Monaco se sirve self-hosted desde `Repo_OS/public/monaco` (generado por `npm run postinstall`) para no depender de CDN externo.
+
+### Qué es mock/simulado
+- Las métricas "GNN" (blast radius, risk, confidence) son heurísticas deterministas sobre acoplamiento de imports y tamaño de archivo, no inferencia de un modelo real.
+- No hay escritura ni mutación de repo desde la UI: solo lectura (`readonly-real`).
+
+### Qué falta
+- Minimapa y tabs NODES/TERMINAL/METRICS del mockup original quedan fuera de esta primera versión.
+- Sin autenticación ni despliegue; pensado para correr localmente (`npm install && npm run dev` dentro de `Repo_OS/`).
+
+## Fase 27.2: Memory Graph Layout + Chat Separado sobre Bus Real (NATS JetStream)
+
+### Qué existe realmente
+- El layout del grafo pasó de grilla fija a un layout orgánico tipo "grafo de memoria" (`Repo_OS/lib/layout.ts`, `d3-force`: repulsión, atracción por edges reales y agrupamiento suave por capa) — mismos 85 nodos reales, ahora dispuestos como un knowledge graph navegable.
+- Se agrega un panel de chat separado (`Repo_OS/components/chat/ChatPanel.tsx`) a la derecha, desacoplado del resto de la UI: nunca llama funciones de dominio directamente.
+- **Semantic firewall real** (`Repo_OS/lib/semantic-firewall.ts`): gramática de allowlist anclada (regex `^...$`) que traduce texto libre a uno de 4 intents fijos (`refrescar grafo`, `buscar <texto>`, `leer <path>`, `ejecutar <objetivo>`) o lo rechaza. No hay LLM interpretando instrucciones en este camino — cualquier texto que no matchee exactamente una de las gramáticas permitidas se bloquea, incluidos intentos de prompt injection, sin ejecutar nada.
+- **Bus de mensajería real** (`Repo_OS/lib/bus.ts`, `Repo_OS/instrumentation.ts`): al arrancar Next.js se descarga y levanta un `nats-server` real con JetStream (`Repo_OS/scripts/setup-nats.mjs`, binario oficial v2.10.22), se crea el stream `REPO_OS_BUS` y un worker en background (proceso separado del request HTTP) consume `repo.intent.submit` como consumer durable.
+- Los intents aprobados por el firewall se publican en JetStream; el worker los ejecuta invocando **funciones reales** de `src/domain` (`buildDomainGraph`, y `runVerticalSliceDeterministic` + `renderProductShell` de `product-consolidation` para `ejecutar <objetivo>`) y publica el resultado; el chat lo recibe por SSE (`/api/chat/stream`) y lo renderiza. Los bloqueos del firewall también se auditan por el bus (`repo.audit.blocked`) y se transmiten en vivo a todos los clientes conectados.
+
+### Qué es mock/simulado
+- El layout de memoria es puramente visual (fuerzas de d3-force), no representa proximidad semántica real más allá del agrupamiento por capa.
+- `ejecutar <objetivo>` corre `runVerticalSliceDeterministic`, que ya era determinista/mock en su propio dominio (approval y apply son mock, como documenta la Fase 25).
+
+### Qué falta
+- El bus solo corre localmente (un `nats-server` por instancia de dev/build), sin clustering ni persistencia fuera de `Repo_OS/.nats-data`.
+- El firewall es un allowlist fijo de 4 verbos; ampliarlo requiere agregar reglas explícitas, nunca interpretación abierta de texto.
+
+## Fase 27.3: Chat con Historial Real, Assembled Interface y Repo Objetivo Configurable
+
+### Qué existe realmente
+- **Historial de chat persistido en JetStream**: cada sesión escribe su transcript en el subject `repo.chat.<sessionId>` del stream `REPO_OS_BUS` (`Repo_OS/lib/bus.ts`: `logChatEntry`, `fetchChatHistory`, `StorageType.File`, retención `max_age` de 24h). El endpoint `GET /api/chat/history` reconstruye la conversación al recargar la página escaneando el stream, no un array en memoria.
+- **Multi-conversación con paridad de UX con claude.ai** (`Repo_OS/components/chat/ChatPanel.tsx`, `ConversationList.tsx`, `MarkdownMessage.tsx`, `Repo_OS/lib/chat-sessions.ts`): lista de conversaciones, streaming de respuesta, render de Markdown y auto-título desde el primer mensaje. El **índice** de sesiones (ids, títulos, `updatedAt`) vive en `localStorage` del navegador — es metadata de cliente; el **contenido** de cada conversación es lo que persiste server-side en el bus.
+- **UX del panel de nodo**: el grafo ahora requiere doble-click para abrir el panel de detalle (un click solo selecciona/resalta el nodo); el panel completo se carga con `next/dynamic` (`RepoGraphCanvas.tsx`), y el resaltado de sintaxis usa el lenguaje real derivado de la extensión del archivo (`Repo_OS/lib/language.ts`) en vez de un valor fijo. Los nodos del grafo se renderizan como orbes circulares en vez de "pill chips".
+- **Nav del sidebar reestructurado**: `ROOT` se renombra a "Explore Repository" y `METADATA` a `UI`; cada entrada del nav (`root`, `ui`) mantiene su propio estado de grafo cacheado de forma independiente y lo carga de forma perezosa la primera vez que se abre (`RepoOsShell.tsx`) — no es routing por URL de Next.js (no hay `useRouter`/pathname), es estado de cliente por-tab con fetch+cache aislado por vista.
+- **Tab "UI" con dos modos**: `interface` (nuevo, default) ensambla en `AssembledInterface.tsx` varios de los paneles de preview reales (HUD, canvas+editor, overlays de gobernanza, paneles ejecutivos/estratégicos, replay, product shell) en un mockup de dashboard único, alimentado por datos reales de sample de `src/domain` vía `GET /api/ui-preview/all`; `graph` conserva el grafo de dependencias por archivo con preview al hacer click, sin cambios de fondo.
+- **Tab "Preview" con React real por nodo de capa UI** (`736c991`, ya en preparación de esta fase): `Repo_OS/components/ui-preview/panels.tsx` (446 líneas) implementa ~15 componentes de preview reales (HUD, canvas, editor, overlays, paneles ejecutivo/estratégico/inversor, replay theater, product shell, etc.), cada uno alimentado por datos de muestra derivados de tipos reales de `src/domain` (`Repo_OS/lib/ui-preview-samples.ts`) — no son imágenes ni mockups estáticos.
+- **Repo objetivo configurable** (`Repo_OS/lib/repo-config.ts`, `Repo_OS/.env.example`): `TARGET_REPO_ROOT`, `TARGET_SRC_PATH`, `TARGET_DOMAIN_PATH` y `TARGET_UI_PATH` permiten apuntar el grafo y la lectura de código (`/api/file`, `/api/graph`) a un repositorio distinto sin cambios de código — primer paso hacia soporte multi-proyecto.
+- **Restyle a "glassmorphism premium"**: `globals.css` y ~10 componentes (chat, badges, cards, tabs, canvas, shell) migran a fondos translúcidos con blur, bordes suaves y nueva paleta en `tailwind.config.ts`.
+
+### Qué es mock/simulado
+- El índice de conversaciones (lista, títulos, cuál está activa) es puramente client-side (`localStorage`); no hay usuarios ni autenticación, así que dos navegadores no comparten la misma lista de conversaciones aunque lean el mismo historial de bus si conocen el `sessionId`.
+- El dashboard de `AssembledInterface` sigue usando datos de muestra deterministas de `src/domain` (los mismos que ya eran mock en fases anteriores), solo cambia cómo se presentan (ensamblados vs. uno a la vez).
+- El path de repo configurable **solo** cubre el grafo y la lectura de código genérica. El chat (ejecución de `ejecutar <objetivo>` vía `execute-intent.ts`) y el tab Preview (`ui-preview-samples.ts`) siguen importando funciones específicas del `src/domain` de *este* repositorio en tiempo de build — apuntar `TARGET_REPO_ROOT` a otro repo no reconfigura esas dos rutas.
+
+### Qué falta
+- El historial de chat persiste 24h en una sola instancia local de `nats-server`; no es retención ni disponibilidad de nivel producción.
+- Sin autenticación: cualquiera con acceso a la UI ve/crea sesiones y dispara `ejecutar <objetivo>` dentro del allowlist del firewall.
+- El modo `graph` del tab UI y el resto de vistas del mockup original (minimapa, tabs NODES/TERMINAL/METRICS) siguen sin implementarse.
+- Habilitar un repo objetivo real distinto de este monorepo requiere reescribir `execute-intent.ts` y `ui-preview-samples.ts` para no depender de `src/domain` propio.
