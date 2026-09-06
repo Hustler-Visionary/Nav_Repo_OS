@@ -51,6 +51,15 @@ export const RepoOsShell = () => {
     fetchView("root");
   }, []);
 
+  // The chat's "refrescar grafo" intent rebuilds this same src/domain graph
+  // server-side; refetch here once it succeeds so the cached view doesn't
+  // go stale relative to what the chat just reported.
+  useEffect(() => {
+    const onGraphRefreshed = () => fetchView("root");
+    window.addEventListener("repo-os:graph-refreshed", onGraphRefreshed);
+    return () => window.removeEventListener("repo-os:graph-refreshed", onGraphRefreshed);
+  }, []);
+
   useEffect(() => {
     if (activeNav === "ui" && !views.ui.loaded) fetchView("ui", "ui");
   }, [activeNav, views.ui.loaded]);

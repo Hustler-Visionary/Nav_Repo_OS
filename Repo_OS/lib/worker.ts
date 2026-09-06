@@ -2,7 +2,7 @@ import { getBus, SUBJECTS, durableConsumerOpts, sc, logChatEntry } from "./bus";
 import { executeIntent } from "./execute-intent";
 import type { Intent } from "./semantic-firewall";
 
-type QueuedIntent = { id: string; intent: Intent; sessionId?: string | null };
+type QueuedIntent = { id: string; intent: Intent; sessionId?: string | null; connectionId: string };
 
 export const startBackgroundWorker = () => {
   const globalState = globalThis as unknown as { __repoOsWorkerStarted?: boolean };
@@ -28,14 +28,14 @@ export const startBackgroundWorker = () => {
       try {
         payload = JSON.parse(sc.decode(m.data)) as QueuedIntent;
         const result = await executeIntent(payload.intent);
-        nc.publish(SUBJECTS.result(payload.id), sc.encode(JSON.stringify(result)));
+        nc.publish(SUBJECTS.result(payload.connectionId, payload.id), sc.encode(JSON.stringify(result)));
         if (payload.sessionId) {
           logChatEntry(nc, payload.sessionId, { role: result.ok ? "system" : "blocked", text: result.summary, at: new Date().toISOString() });
         }
       } catch (err) {
         if (payload) {
           const summary = `execution error: ${String(err)}`;
-          nc.publish(SUBJECTS.result(payload.id), sc.encode(JSON.stringify({ ok: false, summary })));
+          nc.publish(SUBJECTS.result(payload.connectionId, payload.id), sc.encode(JSON.stringify({ ok: false, summary })));
           if (payload.sessionId) logChatEntry(nc, payload.sessionId, { role: "blocked", text: summary, at: new Date().toISOString() });
         }
         console.error("[worker] failed to process intent", err);

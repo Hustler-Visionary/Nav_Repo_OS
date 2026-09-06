@@ -64,12 +64,24 @@ const extractImportSpecifiers = (content: string): string[] => {
   return specifiers;
 };
 
-const resolveSpecifier = (fromFileAbs: string, specifier: string): string | null => {
+/** Extensionless-import fallback order: direct .ts/.tsx sibling, then an index module in a same-named directory. */
+const EXTENSIONLESS_CANDIDATE_SUFFIXES = [".ts", ".tsx", "/index.ts", "/index.tsx"];
+
+/**
+ * Returns every plausible TypeScript source this specifier could resolve
+ * to, in priority order. Callers check each against the set of actually
+ * scanned files -- a naive single guess (always ".ts") silently drops edges
+ * to .tsx files and to directory/index modules.
+ */
+const resolveSpecifierCandidates = (fromFileAbs: string, specifier: string): string[] => {
   const dir = path.dirname(fromFileAbs);
-  let resolved = path.resolve(dir, specifier);
-  if (resolved.endsWith(".js")) resolved = resolved.slice(0, -3) + ".ts";
-  else if (!resolved.endsWith(".ts") && !resolved.endsWith(".tsx")) resolved += ".ts";
-  return resolved;
+  const resolved = path.resolve(dir, specifier);
+  if (resolved.endsWith(".ts") || resolved.endsWith(".tsx")) return [resolved];
+  if (resolved.endsWith(".js")) {
+    const withoutExt = resolved.slice(0, -3);
+    return [`${withoutExt}.ts`, `${withoutExt}.tsx`];
+  }
+  return EXTENSIONLESS_CANDIDATE_SUFFIXES.map((suffix) => resolved + suffix);
 };
 
 const buildGraphForRoot = async (scanRootAbs: string): Promise<RepoGraph> => {
@@ -100,12 +112,10 @@ const buildGraphForRoot = async (scanRootAbs: string): Promise<RepoGraph> => {
     });
 
     for (const specifier of extractImportSpecifiers(content)) {
-      const resolvedAbs = resolveSpecifier(abs, specifier);
-      if (!resolvedAbs) continue;
-      const targetRel = toRelPath(resolvedAbs);
-      if (relPaths.has(targetRel) && targetRel !== relPath) {
-        edges.push({ from: relPath, to: targetRel });
-      }
+      const targetRel = resolveSpecifierCandidates(abs, specifier)
+        .map(toRelPath)
+        .find((rel) => relPaths.has(rel) && rel !== relPath);
+      if (targetRel) edges.push({ from: relPath, to: targetRel });
     }
   }
 

@@ -6,9 +6,10 @@ import { getBus, SUBJECTS, sc, logChatEntry } from "../../../../lib/bus";
 export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
-  const body = (await request.json().catch(() => null)) as { text?: string; sessionId?: string } | null;
+  const body = (await request.json().catch(() => null)) as { text?: string; sessionId?: string; connectionId?: string } | null;
   const text = typeof body?.text === "string" ? body.text : "";
   const sessionId = typeof body?.sessionId === "string" && body.sessionId ? body.sessionId : null;
+  const connectionId = typeof body?.connectionId === "string" && body.connectionId ? body.connectionId : null;
 
   const evaluation = evaluateIntent(text);
   const nc = await getBus();
@@ -26,9 +27,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ blocked: true, reason }, { status: 503 });
   }
 
+  if (!connectionId) {
+    return NextResponse.json({ blocked: true, reason: "missing connectionId" }, { status: 400 });
+  }
+
   const id = randomUUID();
   const js = nc.jetstream();
-  await js.publish(SUBJECTS.intentSubmit, sc.encode(JSON.stringify({ id, intent: evaluation.intent, sessionId })));
+  await js.publish(SUBJECTS.intentSubmit, sc.encode(JSON.stringify({ id, intent: evaluation.intent, sessionId, connectionId })));
 
   return NextResponse.json({ blocked: false, id, intent: evaluation.intent });
 }

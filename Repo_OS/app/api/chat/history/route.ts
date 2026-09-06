@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { fetchChatHistory } from "../../../../lib/bus";
+import { fetchChatHistory, deleteChatHistory } from "../../../../lib/bus";
 
 export const dynamic = "force-dynamic";
 
@@ -13,4 +13,14 @@ export async function GET(request: NextRequest) {
 
   const entries = await fetchChatHistory(sessionId);
   return NextResponse.json({ entries });
+}
+
+export async function DELETE(request: NextRequest) {
+  const sessionId = request.nextUrl.searchParams.get("sessionId");
+  if (!sessionId || !SESSION_ID_PATTERN.test(sessionId)) {
+    return NextResponse.json({ error: "invalid sessionId" }, { status: 400 });
+  }
+
+  await deleteChatHistory(sessionId);
+  return NextResponse.json({ ok: true });
 }

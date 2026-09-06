@@ -20,8 +20,13 @@ const PORT = 4222;
 export const STREAM_NAME = "REPO_OS_BUS";
 export const SUBJECTS = {
   intentSubmit: "repo.intent.submit",
-  result: (intentId: string) => `repo.result.${intentId}`,
-  resultWildcard: "repo.result.>",
+  /**
+   * Scoped by the submitting browser tab's connectionId so one SSE stream
+   * never receives another tab's search/read/execute results -- only that
+   * tab's own submitted intents match its wildcard subscription below.
+   */
+  result: (connectionId: string, intentId: string) => `repo.result.${connectionId}.${intentId}`,
+  resultWildcardFor: (connectionId: string) => `repo.result.${connectionId}.>`,
   audit: "repo.audit.blocked",
   auditWildcard: "repo.audit.>",
   /** Per-session chat transcript, persisted in the stream so a reload can replay it. */
@@ -100,9 +105,13 @@ export const getBus = async (): Promise<NatsConnection | null> => {
     return nc;
   })();
 
-  const nc = await state.starting;
-  state.starting = undefined;
-  return nc;
+  try {
+    return await state.starting;
+  } finally {
+    // Reset even on rejection, so a transient failure (corrupt binary, port
+    // busy) doesn't wedge every later getBus() call on the same rejection.
+    state.starting = undefined;
+  }
 };
 
 export const durableConsumerOpts = (durableName: string) =>
@@ -118,28 +127,38 @@ export const logChatEntry = (nc: NatsConnection, sessionId: string, entry: ChatL
   nc.publish(SUBJECTS.chat(sessionId), sc.encode(JSON.stringify(entry)));
 };
 
+/** Permanently purges a session's persisted transcript from the stream, so deleting a conversation actually deletes it server-side, not just from the local session list. */
+export const deleteChatHistory = async (sessionId: string): Promise<void> => {
+  const nc = await getBus();
+  if (!nc) return;
+  const jsm = await nc.jetstreamManager();
+  await jsm.streams.purge(STREAM_NAME, { filter: SUBJECTS.chat(sessionId) });
+};
+
+/** Safety cap on how many messages a single session's history fetch will ever return. */
 const HISTORY_SCAN_LIMIT = 5000;
 
-/** Replays a session's chat transcript from the stream (best-effort, scoped to the stream's retention window). */
+/**
+ * Replays a session's chat transcript from the stream (best-effort, scoped
+ * to the stream's retention window). Uses an ephemeral consumer filtered to
+ * this session's own subject so traffic from other sessions on the shared
+ * stream can never push this session's messages out of the scan window.
+ */
 export const fetchChatHistory = async (sessionId: string): Promise<ChatLogEntry[]> => {
   const nc = await getBus();
   if (!nc) return [];
 
-  const jsm = await nc.jetstreamManager();
-  const info = await jsm.streams.info(STREAM_NAME);
-  const lastSeq = info.state.last_seq;
-  const firstSeq = Math.max(info.state.first_seq, lastSeq - HISTORY_SCAN_LIMIT + 1);
-  const subject = SUBJECTS.chat(sessionId);
+  const js = nc.jetstream();
+  // No explicit deliver_policy: the ordered-consumer builder in this client
+  // version rejects DeliverPolicy.All combined with its own opt_start_seq,
+  // but its default (StartSequence from seq 1) already means "everything
+  // retained for this subject", which is what we want here.
+  const consumer = await js.consumers.get(STREAM_NAME, { filterSubjects: SUBJECTS.chat(sessionId) });
 
   const entries: ChatLogEntry[] = [];
-  for (let seq = firstSeq; seq <= lastSeq; seq++) {
-    try {
-      const msg = await jsm.streams.getMessage(STREAM_NAME, { seq });
-      if (msg.subject !== subject) continue;
-      entries.push(JSON.parse(sc.decode(msg.data)) as ChatLogEntry);
-    } catch {
-      // sequence purged/expired between info() and getMessage(); skip it
-    }
+  const iter = await consumer.fetch({ max_messages: HISTORY_SCAN_LIMIT, expires: 1500 });
+  for await (const msg of iter) {
+    entries.push(JSON.parse(sc.decode(msg.data)) as ChatLogEntry);
   }
   return entries;
 };

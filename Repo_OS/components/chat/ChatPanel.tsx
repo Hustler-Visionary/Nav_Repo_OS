@@ -126,6 +126,9 @@ export const ChatPanel = () => {
   const pendingCountRef = useRef(0);
   const timeouts = useRef(new Map<string, ReturnType<typeof setTimeout>>());
   const activeIdRef = useRef("");
+  /** Identifies this browser tab's own SSE connection, so results/streams stay scoped to it and never leak to other tabs/users sharing the bus. */
+  const connectionIdRef = useRef("");
+  if (!connectionIdRef.current) connectionIdRef.current = crypto.randomUUID();
   const logRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -164,11 +167,19 @@ export const ChatPanel = () => {
     fetch(`/api/chat/history?sessionId=${encodeURIComponent(id)}`)
       .then((res) => res.json())
       .then((data: { entries?: { role: ChatMessage["role"]; text: string; at: string }[] }) => {
+        // A slower request for a session the user has since navigated away
+        // from must not overwrite the transcript of whichever session is
+        // active now.
+        if (activeIdRef.current !== id) return;
         const entries = data.entries ?? [];
         setMessages(entries.map((entry, i) => ({ ...entry, id: `history-${i}-${entry.at}` })));
       })
-      .catch(() => setMessages([]))
-      .finally(() => setHistoryLoaded(true));
+      .catch(() => {
+        if (activeIdRef.current === id) setMessages([]);
+      })
+      .finally(() => {
+        if (activeIdRef.current === id) setHistoryLoaded(true);
+      });
   };
 
   const switchSession = (id: string) => {
@@ -197,6 +208,10 @@ export const ChatPanel = () => {
 
   const handleDeleteSession = (id: string) => {
     deleteSession(id);
+    // Best-effort: also purge the persisted transcript server-side, so
+    // deleting a conversation deletes it rather than just hiding it from
+    // this browser's local session list.
+    fetch(`/api/chat/history?sessionId=${encodeURIComponent(id)}`, { method: "DELETE" }).catch(() => {});
     if (id !== activeIdRef.current) {
       setSessions(listSessions());
       return;
@@ -219,7 +234,7 @@ export const ChatPanel = () => {
   }, []);
 
   useEffect(() => {
-    const es = new EventSource("/api/chat/stream");
+    const es = new EventSource(`/api/chat/stream?connectionId=${encodeURIComponent(connectionIdRef.current)}`);
 
     es.addEventListener("ready", (e) => {
       const data = JSON.parse((e as MessageEvent).data) as { busOnline: boolean };
@@ -266,9 +281,9 @@ export const ChatPanel = () => {
       const res = await fetch("/api/chat/intent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text, sessionId: activeIdRef.current })
+        body: JSON.stringify({ text, sessionId: activeIdRef.current, connectionId: connectionIdRef.current })
       });
-      const data = (await res.json()) as { blocked: boolean; reason?: string; id?: string };
+      const data = (await res.json()) as { blocked: boolean; reason?: string; id?: string; intent?: { type: string } };
 
       if (data.blocked) {
         // When the bus is online, the firewall's own audit event on the SSE
@@ -278,6 +293,15 @@ export const ChatPanel = () => {
         return;
       }
 
+      // The "refrescar grafo" intent rebuilds the graph server-side, but the
+      // main graph view is fetched once and cached -- tell it to refetch once
+      // that rebuild actually succeeds, or the UI would report success while
+      // showing stale nodes/edges until a manual page reload.
+      const isRefreshGraph = data.intent?.type === "refresh_graph";
+      const notifyIfGraphRefreshed = (payload: ResultPayload) => {
+        if (isRefreshGraph && payload.ok) window.dispatchEvent(new Event("repo-os:graph-refreshed"));
+      };
+
       if (data.id) {
         const id = data.id;
         const already = earlyResults.current.get(id);
@@ -285,12 +309,14 @@ export const ChatPanel = () => {
           // The worker finished and the SSE event beat this fetch() back.
           earlyResults.current.delete(id);
           pushMessage({ role: already.ok ? "system" : "blocked", text: already.summary, fresh: true });
+          notifyIfGraphRefreshed(already);
         } else {
           adjustPending(1);
           pendingResolvers.current.set(id, (payload) => {
             adjustPending(-1);
             clearIntentTimeout(id);
             pushMessage({ role: payload.ok ? "system" : "blocked", text: payload.summary, fresh: true });
+            notifyIfGraphRefreshed(payload);
           });
           timeouts.current.set(
             id,

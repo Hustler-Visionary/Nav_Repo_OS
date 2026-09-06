@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
@@ -48,6 +48,8 @@ export const NodeDetailPanel = ({ node, onClose }: { node: GraphNode; onClose: (
   const [previewError, setPreviewError] = useState<string | null>(null);
   const uiScanDir = process.env.NEXT_PUBLIC_UI_SCAN_DIR || "src/components";
   const isUiNode = node.path.startsWith(`${uiScanDir}/`);
+  const nodeIdRef = useRef(node.id);
+  nodeIdRef.current = node.id;
 
   useEffect(() => {
     setSource(null);
@@ -67,12 +69,21 @@ export const NodeDetailPanel = ({ node, onClose }: { node: GraphNode; onClose: (
 
   const loadSource = () => {
     if (source !== null || loadingSource) return;
+    const requestedId = node.id;
     setLoadingSource(true);
     fetch(`/api/file?path=${encodeURIComponent(node.path)}`)
       .then((res) => res.json())
-      .then((data: { content?: string; error?: string }) => setSource(data.content ?? `// ${data.error ?? "unavailable"}`))
-      .catch((err) => setSource(`// failed to load: ${String(err)}`))
-      .finally(() => setLoadingSource(false));
+      .then((data: { content?: string; error?: string }) => {
+        if (nodeIdRef.current !== requestedId) return;
+        setSource(data.content ?? `// ${data.error ?? "unavailable"}`);
+      })
+      .catch((err) => {
+        if (nodeIdRef.current !== requestedId) return;
+        setSource(`// failed to load: ${String(err)}`);
+      })
+      .finally(() => {
+        if (nodeIdRef.current === requestedId) setLoadingSource(false);
+      });
   };
 
   const PreviewComponent = preview ? uiPreviewRegistry[preview.kind] : undefined;

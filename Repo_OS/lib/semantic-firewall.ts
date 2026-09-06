@@ -8,8 +8,13 @@ export type FirewallResult = { allowed: true; intent: Intent } | { allowed: fals
 
 const MAX_INPUT_LENGTH = 240;
 
-/** Argument charset allowlist: word chars, path separators, spaces and a small set of safe punctuation. No shell/SQL/script metacharacters. */
-const SAFE_ARG = /^[\w\s./\-']{1,160}$/;
+/**
+ * Argument charset allowlist: Unicode letters/numbers (so accented Spanish
+ * text like "gobernación" or "añadir índice" is usable), underscore, path
+ * separators, spaces and a small set of safe punctuation. No shell/SQL/
+ * script metacharacters.
+ */
+const SAFE_ARG = /^[\p{L}\p{N}_\s./\-']{1,160}$/u;
 
 /**
  * Strict allowlist grammar for chat -> execution.
