@@ -30,17 +30,26 @@ Evolución por bloques (detalle fase a fase en `README.md`):
 - Chat panel desacoplado sobre **bus real** (NATS JetStream, `nats-server` levantado por `web/instrumentation.ts`), con worker en background que invoca funciones reales de `src/domain`.
 - **Semantic firewall real**: gramática regex ancladas a 4 intents fijos (`refrescar grafo`, `buscar <texto>`, `leer <path>`, `ejecutar <objetivo>`); cualquier otro texto se bloquea y se audita por el bus, sin interpretación abierta por LLM.
 
-### Trabajo posterior no reflejado aún en README (6 commits, 2026-07-29)
-Estos cambios existen en el árbol pero no están narrados como fase formal:
+### Trabajo posterior no reflejado aún en README (12 commits, 2026-07-28/29)
+
+`README.md` no se ha vuelto a tocar desde el commit `27f6895` (el que documenta la Fase 27.2). **Todos** los commits siguientes —12 en total— existen en el árbol pero no están narrados como fase formal:
 
 | Commit | Cambio |
 |---|---|
+| `699d94c` | Requiere doble-click para abrir el panel de detalle del nodo (antes abría con un click) |
+| `854c356` | Lazy-load del panel de detalle completo; resaltado por extensión de archivo (`web/lib/language.ts` nuevo) |
+| `b06e95a` | Nodos del grafo renderizados como orbes circulares en vez de "pill chips" |
+| `d4006e4` | Rediseño del chat como UI de mensajería real estilo Telegram/Messenger (`ChatPanel.tsx` reescrito, +193/-51 líneas) |
+| `6c4ca82` | **Historial de chat persistido en el bus JetStream real**: nuevo subject `repo.chat.<sessionId>`, `logChatEntry`/`fetchChatHistory` en `web/lib/bus.ts`, endpoint `GET /api/chat/history` |
+| `b4f85f1` | Paridad de UX con claude.ai: lista de conversaciones (`ConversationList.tsx`), render de Markdown (`MarkdownMessage.tsx`), streaming, gestión de sesiones (`web/lib/chat-sessions.ts`) |
 | `01637d4` | Renombra label del sidebar de `ROOT` a "Explore Repository" |
 | `8dffe0f` | Renombra `METADATA` a `UI`; el nav del sidebar pasa a ser un router real |
-| `736c991` | Tab "Preview" con React real para nodos de capa UI (`web/components/ui-preview/panels.tsx`, ~446 líneas nuevas + `ui-preview-samples.ts`) |
-| `1dab500` | Path del repo objetivo configurable (`web/lib/repo-config.ts`, `.env.example`) — primer paso hacia soporte multi-proyecto |
+| `736c991` | Tab "Preview" con React real para nodos de capa UI (`web/components/ui-preview/panels.tsx`, 446 líneas + `ui-preview-samples.ts`) |
+| `1dab500` | Path del repo objetivo configurable (`web/lib/repo-config.ts`, `.env.example`) — primer paso hacia soporte multi-proyecto. **Alcance parcial documentado en el propio código**: solo afecta el grafo/lectura de código genérico; el chat (`execute-intent.ts`) y el tab Preview (`ui-preview-samples.ts`) siguen importando funciones específicas de `src/domain` de *este* repo en build-time, y necesitarán rework dedicado para apuntar a un repo objetivo distinto |
 | `70e09dc` | Dashboard "Full Interface" ensamblado, agregado al nav (`AssembledInterface.tsx`) |
-| `e2deef5` | Restyle completo de la UI a estilo "glassmorphism premium" (globals.css + ~10 componentes) |
+| `e2deef5` | Restyle completo de la UI a estilo "glassmorphism premium" (`globals.css` + ~10 componentes) |
+
+Nota de alineación: la persistencia de historial de chat (`6c4ca82`) usa el mismo stream JetStream con `StorageType.File` en `web/.nats-data` y retención de 24h (`max_age`) — coherente con lo que README ya documenta como "sin clustering ni persistencia fuera de `web/.nats-data`", pero es una capacidad concreta (historial de sesión sobrevive a un reload) que hoy no está mencionada en ningún doc.
 
 Recomendación: consolidar esto como **Fase 27.3** en `README.md` para no perder trazabilidad del proyecto (ver sección 6).
 
@@ -72,11 +81,13 @@ Recomendación: consolidar esto como **Fase 27.3** en `README.md` para no perder
 - Autenticación y despliegue de `web/` — hoy pensado solo para `localhost`.
 - Ampliación gobernada del firewall semántico (hoy 4 verbos fijos).
 - Minimapa y tabs NODES/TERMINAL/METRICS del mockup original de REPO_OS, fuera de esta primera versión.
-- Los 6 commits de la sección 3 no están documentados como fase en `README.md`.
+- El historial de chat persiste en JetStream pero con retención fija de 24h y una sola instancia local (`web/.nats-data`) — no es persistencia "real" de nivel producción, solo sobrevive a un reload de página.
+- El path de repo configurable (`1dab500`) solo cubre grafo/lectura de código; el chat y el tab Preview siguen atados al `src/domain` de este repo.
+- Los 12 commits de la sección 3 no están documentados como fase en `README.md`.
 
 ## 7. Próximas recomendaciones (por impacto)
 
-1. **Documentación**: añadir una entrada "Fase 27.3" en `README.md` cubriendo el router real del sidebar, el tab Preview, el path de repo configurable, el dashboard ensamblado y el restyle — para no perder la trazabilidad fase-a-fase que el resto del proyecto mantiene rigurosamente.
+1. **Documentación**: añadir una entrada "Fase 27.3" en `README.md` cubriendo los 12 commits de la sección 3 (rediseño y persistencia de chat, UX del panel de detalle, router real del sidebar, tab Preview, path de repo configurable, dashboard ensamblado, restyle) — para no perder la trazabilidad fase-a-fase que el resto del proyecto mantiene rigurosamente.
 2. **Cobertura de tests**: `web/lib/repo-config.ts` (nuevo comportamiento público: repo objetivo configurable) y el router real del sidebar no tienen tests visibles en `src/tests/` — priorizar antes de habilitar más de un proyecto objetivo.
 3. **Seguridad antes de exponer `web/`**: agregar autenticación mínima y revisar CORS/CSRF antes de cualquier despliegue fuera de localhost, dado que hoy no hay capa de auth.
 4. **Prueba de concepto de persistencia real**: iniciar Postgres+Drizzle detrás de un flag explícito para el ledger, sin tocar el resto del dominio mock, como primer paso medible hacia el stack canónico de Fase 26.5.
